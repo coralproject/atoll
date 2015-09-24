@@ -1,4 +1,5 @@
 from itertools import product
+from joblib import Parallel, delayed
 from atoll.validate import build_tree, TypeNode
 
 
@@ -25,19 +26,26 @@ class BranchedPipe():
     """
     A special type of pipe for representing branched pipes
     """
-    def __init__(self, pipes):
+    def __init__(self, pipes, n_jobs):
         self.pipes = pipes
         self._input = TypeNode(tuple, ch=[p._input for p in pipes])
         self._output = TypeNode(tuple, ch=[p._output for p in pipes])
+        self.n_jobs = n_jobs
 
     def __call__(self, *input):
-        # Multi-to-branch/branch-to-branch
-        if len(input) > 1:
-            return tuple(p(i) for p, i in zip(self.pipes, input))
+        # One-to-branch, duplicate input for each pipe
+        if len(input) == 1:
+            input = tuple(input for p in self.pipes)
 
-        # One-to-branch
+        # otherwise, multi-to-branch/branch-to-branch
         else:
-            return tuple(p(*input) for p in self.pipes)
+            input = tuple((i,) for i in input)
+
+        stream = zip(self.pipes, input)
+        if self.n_jobs != 0:
+            return tuple(Parallel(n_jobs=self.n_jobs)(delayed(p)(*i) for p, i in stream))
+        else:
+            return tuple(p(*i) for p, i in stream)
 
     @property
     def name(self):
@@ -87,10 +95,12 @@ class Pipe(metaclass=MetaPipe):
 class Pipeline():
     def __init__(self, pipes, **kwargs):
         self.pipes = []
+        self.n_jobs = kwargs.get('n_jobs', 0)
+
         # Process branches if necessary
         for p in pipes:
             if isinstance(p, tuple):
-                self.pipes.append(BranchedPipe(p))
+                self.pipes.append(BranchedPipe(p, self.n_jobs))
             else:
                 self.pipes.append(p)
 

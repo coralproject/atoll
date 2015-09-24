@@ -34,6 +34,32 @@ class FirstCharPipe(Pipe):
         return [[s_[0] for s_ in s] for s in input]
 
 
+# for parallielization pickling, must define pipes here
+class Ap(Pipe):
+    input = [int]
+    output = [int]
+    def __call__(self, vals):
+        return [v+1 for v in vals]
+
+class Bp(Pipe):
+    input = [int]
+    output = [int]
+    def __call__(self, vals):
+        return [v+2 for v in vals]
+
+class Cp(Pipe):
+    input = [int]
+    output = [int]
+    def __call__(self, vals):
+        return [v+3 for v in vals]
+
+class Ep(Pipe):
+    input = ([int], [int])
+    output = [int]
+    def __call__(self, vals1, vals2):
+        return [sum([v1,v2]) for v1,v2 in zip(vals1,vals2)]
+
+
 
 class PipelineTests(unittest.TestCase):
     def setUp(self):
@@ -359,42 +385,23 @@ class BranchingPipelineTests(unittest.TestCase):
             self.fail('Valid pipeline raised exception')
 
     def test_branching_pipeline(self):
-        class A(Pipe):
-            input = [int]
-            output = [int]
-            def __call__(self, vals):
-                return [v+1 for v in vals]
-
-        class B(Pipe):
-            input = [int]
-            output = [int]
-            def __call__(self, vals):
-                return [v+2 for v in vals]
-
-        class C(Pipe):
-            input = [int]
-            output = [int]
-            def __call__(self, vals):
-                return [v+3 for v in vals]
-
-        class D(Pipe):
-            input = [int]
-            output = [int]
-            def __call__(self, vals):
-                return [v+4 for v in vals]
-
-        class E(Pipe):
-            input = ([int], [int], [int])
-            output = [int]
-            def __call__(self, vals1, vals2, vals3):
-                return [sum([v1,v2,v3]) for v1,v2,v3 in zip(vals1,vals2,vals3)]
-
         p = Pipeline([
-            A(),
-            (B(), C(), D()),
-            (B(), C(), D()),
-            E()
+            Ap(),
+            (Bp(), Cp()),
+            (Bp(), Cp()),
+            Ep()
         ])
 
         out = p([1,2,3,4])
-        self.assertEqual(out, [24,27,30,33])
+        self.assertEqual(out, [14,16,18,20])
+
+    def test_parallel_branching(self):
+        p = Pipeline([
+            Ap(),
+            (Bp(), Cp()),
+            (Bp(), Cp()),
+            Ep()
+        ], n_jobs=2)
+
+        out = p([1,2,3,4])
+        self.assertEqual(out, [14,16,18,20])
