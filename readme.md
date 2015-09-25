@@ -174,7 +174,6 @@ branching_pipeline(data)
 # >>> [[(5, 'coral'), (5, 'reefs'), (3, 'are'), (7, 'diverse'), (10, 'underwater'), (10, 'ecosystems')],
 #      [(5, 'coral'), (5, 'reefs'), (3, 'are'), (5, 'built'), (2, 'by'), (8, 'colonies'), (2, 'of'), (4, 'tiny'), (7, 'animals')]]
 ```
-```
 
 #### Naming pipelines
 
