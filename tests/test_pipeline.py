@@ -405,3 +405,53 @@ class BranchingPipelineTests(unittest.TestCase):
 
         out = p([1,2,3,4])
         self.assertEqual(out, [14,16,18,20])
+
+    def test_identity_pipes(self):
+        class A(Pipe):
+            input = Ain
+            # A does not output tuples
+            output = Aout
+
+        class B(Pipe):
+            input = A.output
+            output = Bout
+
+        class C(Pipe):
+            input = A.output
+            output = Cout
+
+        class E(Pipe):
+            input = (B.output, C.output, A.output)
+            output = Eout
+
+        try:
+            Pipeline([
+                A(),
+                (B(), C(), None),
+                E()
+            ])
+        except Exception:
+            self.fail('Valid pipeline raised exception')
+
+    def test_invalid_identity_pipes(self):
+        class A(Pipe):
+            input = Ain
+            # A does not output tuples
+            output = Aout
+
+        class B(Pipe):
+            input = A.output
+            output = Bout
+
+        class C(Pipe):
+            input = A.output
+            output = Cout
+
+        class E(Pipe):
+            input = (B.output, C.output, X)
+            output = Eout
+
+        self.assertRaises(Exception, Pipeline, [A(),
+                                                (B(), C(), None),
+                                                E()])
+

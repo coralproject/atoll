@@ -28,13 +28,16 @@ class BranchedPipe():
     A special type of pipe for representing branched pipes
     """
     def __init__(self, pipes, n_jobs):
-        self.pipes = pipes
+        # Check for any identity pipes
+        pipes = [p if p != None else IdentityPipe() for p in pipes]
+
         self._input = TypeNode(tuple, ch=[p._input for p in pipes])
         self._output = TypeNode(tuple, ch=[p._output for p in pipes])
         self.n_jobs = n_jobs
 
-        self.name = '({})'.format(', '.join([p.name for p in self.pipes]))
-        self.sig = '|'.join([p.sig for p in self.pipes])
+        self.name = '({})'.format(', '.join([p.name for p in pipes]))
+        self.sig = '|'.join([p.sig for p in pipes])
+        self.pipes = pipes
 
     def __call__(self, *input):
         # One-to-branch, duplicate input for each pipe
@@ -50,6 +53,24 @@ class BranchedPipe():
             return tuple(Parallel(n_jobs=self.n_jobs)(delayed(p)(*i) for p, i in stream))
         else:
             return tuple(p(*i) for p, i in stream)
+
+
+class IdentityPipe():
+    """
+    The identity pipe is a special pipe which passes along its input unmodified.
+    It is used only in branching.
+    """
+    name = 'IdentityPipe'
+    sig = 'IdentityPipe'
+
+    def __init__(self):
+        # These are established during validation
+        self._input = None
+        self._output = None
+
+    def __call__(self, input):
+        return input
+
 
 class Pipe(metaclass=MetaPipe):
     input = [str]
@@ -94,7 +115,7 @@ class Pipeline():
         self.pipes = []
         self.n_jobs = kwargs.get('n_jobs', 0)
 
-        # Process branches if necessary
+        # Process branches as necessary
         for p in pipes:
             if isinstance(p, tuple):
                 self.pipes.append(BranchedPipe(p, self.n_jobs))
@@ -112,6 +133,15 @@ class Pipeline():
                 if output.type != tuple:
                     output = TypeNode(tuple, ch=[output for i in input.children])
 
+                # Check for identity pipes
+                for i, ch in enumerate(input.children):
+                    if ch is None:
+                        # The identity pipe's input and output
+                        # depend on the pipe that feeds into it,
+                        # so update its input and output here
+                        input.children[i] = output.children[i]
+                        p_in._output.children[i] = output.children[i]
+
             if output != input:
                 raise Exception('Incompatible pipes:\npipe {} outputs {},\npipe {} requires input of {}.'.format(p_out.name, output, p_in.name, input))
 
@@ -121,7 +151,7 @@ class Pipeline():
 
         # Ideally users should name their own pipelines
         # so they know what a pipeline does, but a fallback is offered
-        self.name = kwargs.get('name', self.fingerprint)
+        self.name = kwargs.get('name', self.sig)
 
     def __call__(self, input):
         for pipe in self.pipes:
@@ -136,9 +166,9 @@ class Pipeline():
         return ' -> '.join([str(p) for p in self.pipes])
 
     @property
-    def fingerprint(self):
+    def sig(self):
         """
-        Produce a fingerprint of the pipeline.
+        Produce a sig of the pipeline.
         This is for establishing data analysis provenance,
         but note that it does not (yet) account for stochastic pipes!
         """
