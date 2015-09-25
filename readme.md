@@ -142,6 +142,39 @@ branching_pipeline = Pipeline([
 ], n_jobs=2)
 ```
 
+##### Identity pipes
+
+When branching, sometimes you want to pass some data unmodified to a pipe after the branching. Identity pipes allow you to do that.
+
+An identity pipe is declared by using the `None` keyword in a branching segment, e.g.:
+
+```python
+class CharCountPipe(Pipe):
+    input = [[str]]
+    output = [[int]]
+
+    def __call__(self, input):
+        return [[len(w) for w in s] for s in input]
+
+class CharCountWithWordPipe(Pipe):
+    input = ([[int]], [[str]])
+    output = [[(int, str)]]
+
+    def __call__(self, charcounts, wordlists):
+        return [list(zip(counts, words)) for counts, words in zip(charcounts, wordlists)]
+
+branching_pipeline = Pipeline([
+        LowercasePipe(),
+        TokenizerPipe(),
+        (CharCountPipe(), None),
+        CharCountWithWordPipe()
+])
+
+branching_pipeline(data)
+# >>> [[(5, 'coral'), (5, 'reefs'), (3, 'are'), (7, 'diverse'), (10, 'underwater'), (10, 'ecosystems')], [(5, 'coral'), (5, 'reefs'), (3, 'are'), (5, 'built'), (2, 'by'), (8, 'colonies'), (2, 'of'), (4, 'tiny'), (7, 'animals')]]
+```
+```
+
 #### Naming pipelines
 
 It's a best practice to name your pipelines something descriptive so you know what it does:
