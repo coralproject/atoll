@@ -166,12 +166,13 @@ class CharCountWithWordPipe(Pipe):
 branching_pipeline = Pipeline([
         LowercasePipe(),
         TokenizerPipe(),
-        (CharCountPipe(), None),
+        (CharCountPipe(), None), # The output of TokenizerPipe will also be passed to CharCountWithWordPipe
         CharCountWithWordPipe()
 ])
 
 branching_pipeline(data)
-# >>> [[(5, 'coral'), (5, 'reefs'), (3, 'are'), (7, 'diverse'), (10, 'underwater'), (10, 'ecosystems')], [(5, 'coral'), (5, 'reefs'), (3, 'are'), (5, 'built'), (2, 'by'), (8, 'colonies'), (2, 'of'), (4, 'tiny'), (7, 'animals')]]
+# >>> [[(5, 'coral'), (5, 'reefs'), (3, 'are'), (7, 'diverse'), (10, 'underwater'), (10, 'ecosystems')],
+#      [(5, 'coral'), (5, 'reefs'), (3, 'are'), (5, 'built'), (2, 'by'), (8, 'colonies'), (2, 'of'), (4, 'tiny'), (7, 'animals')]]
 ```
 ```
 
