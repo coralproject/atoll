@@ -44,6 +44,10 @@ input = [str, int]
 input = [(str, str), (str, int)]
 ```
 
+Lists, however, can be arbitrarily nested, assuming that the nested lists are homogenous in the same way.
+
+For example, `[str]` encapsulates `['a', 'b', 'c']` as well as `['a', ['b', 'c']]` (this may need revisiting).
+
 These type signatures are capable of handling custom classes, all the primitive Python types, as well as dictionaries.
 
 ### Defining pipelines
