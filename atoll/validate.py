@@ -17,20 +17,20 @@ def build_tree(input):
             ch = next(iter(input))
             return TypeNode(typ, ch=[build_tree(ch)])
         elif l == 0:
-            raise Exception('You must specify the element type of lists and sets')
+            raise TypeError('You must specify the element type of lists and sets')
         else:
-            raise Exception('Lists and sets can have only one element type')
+            raise TypeError('Lists and sets can have only one element type')
 
     elif typ is tuple:
         if len(input) == 0:
-            raise Exception('You must specify the element type(s) of tuples')
+            raise TypeError('You must specify the element type(s) of tuples')
         return TypeNode(typ, ch=[build_tree(ch) for ch in input])
 
     elif typ is dict:
         return TypeNode(_dict_to_struct(input))
 
     else:
-        raise Exception('Unsupported type: {}'.format(typ))
+        raise TypeError('Unsupported type: {}'.format(typ))
 
 
 def _dict_to_struct(dct):

@@ -1,5 +1,6 @@
 import unittest
 from atoll import Pipe, Pipeline
+from atoll.pipeline import InvalidPipelineError
 
 
 class LowercasePipe(Pipe):
@@ -85,7 +86,7 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(set(o), set(e))
 
     def test_incompatible_pipeline(self):
-        self.assertRaises(Exception, Pipeline, [WordCounterPipe(), LowercasePipe()])
+        self.assertRaises(InvalidPipelineError, Pipeline, [WordCounterPipe(), LowercasePipe()])
 
     def test_nested_pipeline(self):
         nested_pipeline = Pipeline([LowercasePipe(), TokenizePipe()])
@@ -139,7 +140,7 @@ class BranchingPipelineTests(unittest.TestCase):
                 (B(), C(), D()),
                 E()
             ])
-        except Exception:
+        except InvalidPipelineError:
             self.fail('Valid pipeline raised exception')
 
     def test_invalid_branching_pipeline_multiout_to_branches(self):
@@ -165,31 +166,31 @@ class BranchingPipelineTests(unittest.TestCase):
             output = Eout
 
         # Wrong branch size
-        self.assertRaises(Exception, Pipeline, [A(), (B(), C()), E()])
+        self.assertRaises(InvalidPipelineError, Pipeline, [A(), (B(), C()), E()])
 
         # Wrong branch order
-        self.assertRaises(Exception, Pipeline, [A(), (C(), B(), D()), E()])
+        self.assertRaises(InvalidPipelineError, Pipeline, [A(), (C(), B(), D()), E()])
 
         # Wrong input type
         class D_(Pipe):
             input = X
             output = Dout
 
-        self.assertRaises(Exception, Pipeline, [A(), (B(), C(), D_()), E()])
+        self.assertRaises(InvalidPipelineError, Pipeline, [A(), (B(), C(), D_()), E()])
 
         # Wrong output size
         class A_(Pipe):
             input = Ain
             output = (Bin, Cin)
 
-        self.assertRaises(Exception, Pipeline, [A_(), (B(), C(), D()), E()])
+        self.assertRaises(InvalidPipelineError, Pipeline, [A_(), (B(), C(), D()), E()])
 
         # Wrong output types
         class A_(Pipe):
             input = Ain
             output = (Bin, Cin, X)
 
-        self.assertRaises(Exception, Pipeline, [A_(), (B(), C(), D()), E()])
+        self.assertRaises(InvalidPipelineError, Pipeline, [A_(), (B(), C(), D()), E()])
 
     def test_valid_branching_pipeline_branches_to_branches(self):
         class A(Pipe):
@@ -220,7 +221,7 @@ class BranchingPipelineTests(unittest.TestCase):
                 (B(), C(), D()),
                 E()
             ])
-        except Exception:
+        except InvalidPipelineError:
             self.fail('Valid pipeline raised exception')
 
     def test_invalid_branching_pipeline_branches_to_branches(self):
@@ -245,7 +246,7 @@ class BranchingPipelineTests(unittest.TestCase):
             input = (B.output, C.output, D.output)
             output = Eout
 
-        self.assertRaises(Exception, Pipeline, [A(),
+        self.assertRaises(InvalidPipelineError, Pipeline, [A(),
                                                 (B(), C(), D()),
                                                 (B(), C(), D()),
                                                 E()])
@@ -278,7 +279,7 @@ class BranchingPipelineTests(unittest.TestCase):
                 (B(), C(), D()),
                 E()
             ])
-        except Exception:
+        except InvalidPipelineError:
             self.fail('Valid pipeline raised exception')
 
     def test_invalid_branching_pipeline_one_output_to_branches(self):
@@ -303,7 +304,7 @@ class BranchingPipelineTests(unittest.TestCase):
             input = (B.output, C.output, D.output)
             output = Eout
 
-        self.assertRaises(Exception, Pipeline, [A(),
+        self.assertRaises(InvalidPipelineError, Pipeline, [A(),
                                                 (B(), C(), D()),
                                                 E()])
 
@@ -329,7 +330,7 @@ class BranchingPipelineTests(unittest.TestCase):
             input = (B.output, C.output, X)
             output = Eout
 
-        self.assertRaises(Exception, Pipeline, [A(),
+        self.assertRaises(InvalidPipelineError, Pipeline, [A(),
                                                 (B(), C(), D()),
                                                 E()])
 
@@ -355,7 +356,7 @@ class BranchingPipelineTests(unittest.TestCase):
                 (B(), C(), D()),
                 E()
             ])
-        except Exception:
+        except InvalidPipelineError:
             self.fail('Valid pipeline raised exception')
 
     def test_valid_branching_pipeline_end_with_branches(self):
@@ -381,7 +382,7 @@ class BranchingPipelineTests(unittest.TestCase):
                 A(),
                 (B(), C(), D()),
             ])
-        except Exception:
+        except InvalidPipelineError:
             self.fail('Valid pipeline raised exception')
 
     def test_branching_pipeline(self):
@@ -430,7 +431,7 @@ class BranchingPipelineTests(unittest.TestCase):
                 (B(), C(), None),
                 E()
             ])
-        except Exception:
+        except InvalidPipelineError:
             self.fail('Valid pipeline raised exception')
 
     def test_invalid_identity_pipes(self):
@@ -451,7 +452,8 @@ class BranchingPipelineTests(unittest.TestCase):
             input = (B.output, C.output, X)
             output = Eout
 
-        self.assertRaises(Exception, Pipeline, [A(),
-                                                (B(), C(), None),
-                                                E()])
+        self.assertRaises(InvalidPipelineError,
+                          Pipeline, [A(),
+                                     (B(), C(), None),
+                                     E()])
 

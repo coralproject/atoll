@@ -17,7 +17,7 @@ class TestTypeTrees(unittest.TestCase):
 
     def test_invalid_type(self):
         input = 'sup'
-        self.assertRaises(Exception, lambda _: build_tree(input))
+        self.assertRaises(TypeError, lambda _: build_tree(input))
 
     def test_homogenous_list(self):
         input = [str]
@@ -27,7 +27,7 @@ class TestTypeTrees(unittest.TestCase):
 
     def test_heterogenous_list(self):
         input = [str, int]
-        self.assertRaises(Exception, lambda _: build_tree(input))
+        self.assertRaises(TypeError, lambda _: build_tree(input))
 
     def test_homogenous_set(self):
         input = {str}
@@ -37,19 +37,19 @@ class TestTypeTrees(unittest.TestCase):
 
     def test_heterogenous_set(self):
         input = {str, int}
-        self.assertRaises(Exception, lambda _: build_tree(input))
+        self.assertRaises(TypeError, lambda _: build_tree(input))
 
     def test_empty_list(self):
         input = []
-        self.assertRaises(Exception, lambda _: build_tree(input))
+        self.assertRaises(TypeError, lambda _: build_tree(input))
 
     def test_empty_set(self):
         input = set()
-        self.assertRaises(Exception, lambda _: build_tree(input))
+        self.assertRaises(TypeError, lambda _: build_tree(input))
 
     def test_empty_tuple(self):
         input = tuple()
-        self.assertRaises(Exception, lambda _: build_tree(input))
+        self.assertRaises(TypeError, lambda _: build_tree(input))
 
     def test_nested_lists(self):
         input = [[int]]

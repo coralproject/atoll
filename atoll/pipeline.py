@@ -1,7 +1,14 @@
+import logging
 from hashlib import md5
 from itertools import product
 from joblib import Parallel, delayed
 from atoll.validate import build_tree, TypeNode
+
+logger = logging.getLogger(__name__)
+
+
+class InvalidPipelineError(Exception):
+    pass
 
 
 class MetaPipe(type):
@@ -143,7 +150,9 @@ class Pipeline():
                         p_in._output.children[i] = output.children[i]
 
             if output != input:
-                raise Exception('Incompatible pipes:\npipe {} outputs {},\npipe {} requires input of {}.'.format(p_out.name, output, p_in.name, input))
+                msg = 'Incompatible pipes:\npipe {} outputs {},\npipe {} requires input of {}.'.format(p_out.name, output, p_in.name, input)
+                logger.error(msg)
+                raise InvalidPipelineError(msg)
 
         # Pipelines can be nested
         self._input = self.pipes[0]._input
@@ -155,10 +164,14 @@ class Pipeline():
 
     def __call__(self, input):
         for pipe in self.pipes:
-            if isinstance(input, tuple):
-                output = pipe(*input)
-            else:
-                output = pipe(input)
+            try:
+                if isinstance(input, tuple):
+                    output = pipe(*input)
+                else:
+                    output = pipe(input)
+            except:
+                logger.exception('Failed to execute pipe {}'.format(pipe))
+                raise
             input = output
         return output
 
