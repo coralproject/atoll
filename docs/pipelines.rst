@@ -20,6 +20,9 @@ Custom pipes are defined like so:
 
 The ``input`` and ``output`` attributes are required. These define the pipe's input and output type signatures, which are needed for validating pipelines when they are defined. They are also used to automatically document what the pipe accepts and returns.
 
+Pipe type signatures
+~~~~~~~~~~~~~~~~~~~~
+
 The type signatures are composed of regular Python types, with one main restriction. Lists and sets must be homogenous, so they can be defined with only one element type (note that a tuple can be heterogenous and acts as a "type" on its own).
 
 For example, the following type signatures are valid:
@@ -42,6 +45,22 @@ Lists, however, can be arbitrarily nested, assuming that the nested lists are ho
 For example, ``[str]`` encapsulates ``['a', 'b', 'c']`` as well as ``['a', ['b', 'c']]`` (this may need revisiting).
 
 These type signatures are capable of handling custom classes, all the primitive Python types, as well as dictionaries.
+
+There is some support for recursive types, i.e::
+
+    {
+        'replies': [{
+            'replies': [{
+                # etc
+            }]
+        }]
+    }
+
+The above can be represented as::
+
+    {
+        'replies': ['self']
+    }
 
 
 Defining pipelines
