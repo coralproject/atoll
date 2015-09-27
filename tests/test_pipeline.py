@@ -94,6 +94,23 @@ class PipelineTests(unittest.TestCase):
         counts = pipeline(self.docs)
         self.assertEqual(counts, [6,9])
 
+    def test_valid_struct_pipeline(self):
+        class CommentPipe(Pipe):
+            input = [str]
+            output = [{'body':str,'user':str}]
+            def __call__(self, input):
+                return [{'body':s,'user':'foo'} for s in input]
+
+        class BodyLenPipe(Pipe):
+            input = [{'body':str}]
+            output = [int]
+            def __call__(self, input):
+                return [len(s['body']) for s in input]
+
+        pipeline = Pipeline([CommentPipe(), BodyLenPipe()])
+        output = pipeline(self.docs)
+        print(output)
+
 
 
 

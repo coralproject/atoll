@@ -12,7 +12,6 @@ class TestTypeTrees(unittest.TestCase):
     def test_simple_type(self):
         input = str
         root = build_tree(input)
-        print(root)
         self.assertEquals(str, self.unroll_tree(root))
 
     def test_invalid_type(self):
@@ -22,7 +21,6 @@ class TestTypeTrees(unittest.TestCase):
     def test_homogenous_list(self):
         input = [str]
         root = build_tree(input)
-        print(root)
         self.assertEquals([list, [str]], self.unroll_tree(root))
 
     def test_heterogenous_list(self):
@@ -32,7 +30,6 @@ class TestTypeTrees(unittest.TestCase):
     def test_homogenous_set(self):
         input = {str}
         root = build_tree(input)
-        print(root)
         self.assertEquals([set, [str]], self.unroll_tree(root))
 
     def test_heterogenous_set(self):
@@ -54,19 +51,16 @@ class TestTypeTrees(unittest.TestCase):
     def test_nested_lists(self):
         input = [[int]]
         root = build_tree(input)
-        print(root)
         self.assertEquals([list, [[list, [int]]]], self.unroll_tree(root))
 
     def test_tuple(self):
         input = (int, str)
         root = build_tree(input)
-        print(root)
         self.assertEquals([tuple, [int, str]], self.unroll_tree(root))
 
     def test_tuple_list(self):
         input = [(int, str)]
         root = build_tree(input)
-        print(root)
         self.assertEquals([list, [[tuple, [int, str]]]], self.unroll_tree(root))
 
     def test_arbitrary_class(self):
@@ -75,13 +69,11 @@ class TestTypeTrees(unittest.TestCase):
 
         input = MyClass
         root = build_tree(input)
-        print(root)
         self.assertEquals(MyClass, self.unroll_tree(root))
 
     def test_simple_dict(self):
         input = {'sup': str, 'hey': int}
         root = build_tree(input)
-        print(root)
 
         s1 = _dict_to_struct(input)
         self.assertEquals(s1, self.unroll_tree(root))
@@ -89,11 +81,11 @@ class TestTypeTrees(unittest.TestCase):
     def test_simple_dict_inequality(self):
         input = {'sup': str, 'hey': int}
         root = build_tree(input)
-        print(root)
 
         input = {'sup': int, 'hey': str}
         s1 = _dict_to_struct(input)
         self.assertNotEquals(s1, self.unroll_tree(root))
+
 
 class TestDictStruct(unittest.TestCase):
     def test_simple_dict_to_struct(self):
@@ -128,13 +120,23 @@ class TestDictStruct(unittest.TestCase):
         s2 = _dict_to_struct(input)
         self.assertEquals(s1, s2)
 
+    def test_recursive_dict_to_struct(self):
+        input = {
+            'sup': int,
+            'hey': ['self']
+        }
+        s1 = _dict_to_struct(input)
+        s2 = _dict_to_struct(input)
+        self.assertEquals(s1, s2)
+
 
 class TestValidation(unittest.TestCase):
     def test_simple_validation(self):
         input = [(int, str)]
         root_a = build_tree(input)
         root_b = build_tree(input)
-        self.assertEquals(root_a, root_b)
+        self.assertTrue(root_a.accepts(root_b))
+        self.assertTrue(root_b.accepts(root_a))
 
     def test_complex_validation(self):
         input = {
@@ -147,5 +149,31 @@ class TestValidation(unittest.TestCase):
         }
         root_a = build_tree(input)
         root_b = build_tree(input)
-        print(root_a)
-        self.assertEquals(root_a, root_b)
+        self.assertTrue(root_a.accepts(root_b))
+        self.assertTrue(root_b.accepts(root_a))
+
+    def test_dict_validation(self):
+        output = {
+            'sup': int,
+            'hey': [(int, str)]
+        }
+        input = {
+            'sup': int
+        }
+        root_input = build_tree(input)
+        root_output = build_tree(output)
+        self.assertTrue(root_input.accepts(root_output))
+        self.assertFalse(root_output.accepts(root_input))
+
+    def test_dict_recursion_validation(self):
+        output = {
+            'sup': 'self',
+            'hey': [(int, str)]
+        }
+        input = {
+            'sup': 'self'
+        }
+        root_input = build_tree(input)
+        root_output = build_tree(output)
+        self.assertTrue(root_input.accepts(root_output))
+        self.assertFalse(root_output.accepts(root_input))

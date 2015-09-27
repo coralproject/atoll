@@ -43,7 +43,7 @@ class BranchedPipe():
         self.n_jobs = n_jobs
 
         self.name = '({})'.format(', '.join([p.name for p in pipes]))
-        self.sig = '|'.join([p.sig for p in pipes])
+        self.sig = '({})'.format(', '.join([p.sig for p in pipes]))
         self.pipes = pipes
 
     def __call__(self, *input):
@@ -60,6 +60,9 @@ class BranchedPipe():
             return tuple(Parallel(n_jobs=self.n_jobs)(delayed(p)(*i) for p, i in stream))
         else:
             return tuple(p(*i) for p, i in stream)
+
+    def __repr__(self):
+        return self.sig
 
 
 class IdentityPipe():
@@ -149,7 +152,7 @@ class Pipeline():
                         input.children[i] = output.children[i]
                         p_in._output.children[i] = output.children[i]
 
-            if output != input:
+            if not input.accepts(output):
                 msg = 'Incompatible pipes:\npipe {} outputs {},\npipe {} requires input of {}.'.format(p_out.name, output, p_in.name, input)
                 logger.error(msg)
                 raise InvalidPipelineError(msg)

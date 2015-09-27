@@ -27,7 +27,11 @@ def build_tree(input):
         return TypeNode(typ, ch=[build_tree(ch) for ch in input])
 
     elif typ is dict:
-        return TypeNode(_dict_to_struct(input))
+        return TypeNode(_dict_to_struct(input), struct=True)
+
+    # special recursion case
+    elif input == 'self':
+        return TypeNode('self')
 
     else:
         raise TypeError('Unsupported type: {}'.format(typ))
@@ -47,7 +51,7 @@ def _dict_to_struct(dct):
     # recurse and convert to type nodes
     _dct = {}
     for k, v in dct.items():
-        _dct[k] = build_tree(v) if type(v) != dict else TypeNode(_dict_to_struct(v))
+        _dct[k] = build_tree(v) if type(v) != dict else TypeNode(_dict_to_struct(v), struct=True)
 
     # the 'struct' is actually an instance of the namedtuple
     # where its attributes are type nodes
@@ -56,14 +60,32 @@ def _dict_to_struct(dct):
 
 
 class TypeNode():
-    def __init__(self, typ, ch=[], key=None):
+    def __init__(self, typ, ch=[], struct=False):
         self.type = typ
         self.children = ch
+        self.struct = struct
 
-    def __eq__(self, other):
+    def accepts(self, other):
+        """Whether `self` can accept input from `other`"""
+        if self.struct and other.struct:
+            other_dict = other.type._asdict()
+            return all(p in other_dict for p in self.type._asdict())
+        else:
+            if not self.sim(other):
+                return False
+            return all(ch.accepts(ch_other) for ch, ch_other in zip(self.children, other.children))
+
+    def sim(self, other):
+        """Checks for 'similarity', if the node types are equal but does not check their children"""
         if self.type != other.type:
             return False
         if len(self.children) != len(other.children):
+            return False
+        return True
+
+    def __eq__(self, other):
+        """Checks for exact equality (symmetric)"""
+        if not self.sim(other):
             return False
         return all(ch == ch_other for ch, ch_other in zip(self.children, other.children))
 
@@ -72,7 +94,7 @@ class TypeNode():
 
     def __repr__(self):
         indent = '  '
-        if type(self.type) is not type:
+        if self.struct:
             # namedtuple (pseudo-struct)
             # reconstruct into dict form
             pstruct = self.type
@@ -102,6 +124,10 @@ class TypeNode():
         elif self.type == tuple:
             ch = indent + ('\n' + indent).join([str(c) for c in self.children])
             return '\n'.join(['(', ch, ')'])
+
+        # special recursive case
+        elif self.type == 'self':
+            return 'self'
 
         else:
             return self.type.__name__
