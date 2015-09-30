@@ -1,6 +1,7 @@
 from atoll import __version__
 from setuptools import setup, find_packages
 
+
 setup(
     name='atoll',
     version=__version__,
@@ -15,4 +16,9 @@ setup(
         'joblib',
         'requests',
     ],
+    test_requires=[
+        'nose',
+        'httpretty'
+    ],
+    test_suite='nose.collector',
 )
