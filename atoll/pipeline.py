@@ -1,6 +1,6 @@
+import six
 import logging
 from hashlib import md5
-from itertools import product
 from joblib import Parallel, delayed
 from atoll.validate import build_tree, TypeNode
 
@@ -25,7 +25,7 @@ class MetaPipe(type):
 
     @property
     def __doc__(self):
-        doc = super().__doc__ or ''
+        doc = super(MetaPipe, self).__doc__ or ''
         return '\n'.join([doc.strip(),
                           '\nInput:', str(self._input),
                           '\nOutput:', str(self._output)])
@@ -82,12 +82,13 @@ class IdentityPipe():
         return input
 
 
-class Pipe(metaclass=MetaPipe):
+@six.add_metaclass(MetaPipe)
+class Pipe():
     input = [str]
     output = [str]
 
     def __new__(cls, *args, **kwargs):
-        obj = super().__new__(cls)
+        obj = super(Pipe, cls).__new__(cls)
         obj._args = args
         obj._kwargs = kwargs
 
@@ -117,7 +118,7 @@ class Pipe(metaclass=MetaPipe):
         raise NotImplementedError
 
     def __doc__(self):
-        return super().__doc__()
+        return super(Pipe, self).__doc__()
 
 
 class Pipeline():
