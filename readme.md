@@ -7,7 +7,7 @@ Install via `pip`:
 
     pip install git+https://github.com/coralproject/atoll
 
-Right now `atoll` only supports Python 3, but Python 2.7 support is planned.
+`atoll` supports both Python 3 and Python 2.7, but Python 3 is recommended.
 
 ## Setup
 
