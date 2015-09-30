@@ -3,7 +3,11 @@
 
 ## Installation
 
-(still in development so no installation yet)
+Install via `pip`:
+
+    pip install git+https://github.com/coralproject/atoll
+
+Right now `atoll` only supports Python 3, but Python 2.7 support is planned.
 
 ## Setup
 
