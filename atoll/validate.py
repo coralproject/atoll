@@ -1,3 +1,5 @@
+import six
+import types
 from hashlib import md5
 from collections import namedtuple
 
@@ -8,7 +10,8 @@ def build_tree(input):
     """
     typ = type(input)
 
-    if typ is type:
+    # support for old-style py2 classes
+    if typ is type or (six.PY2 and typ is types.ClassType):
         return TypeNode(input)
 
     elif typ in [list, set]:
