@@ -11,11 +11,23 @@ def load_conf(path):
     return parse_conf(conf)
 
 
-def parse_pipe(pipe):
+def parse_pipeline(name, pipes, pipelines):
+    """
+    Parse a pipeline; other pipeline configs
+    are passed in as `pipelines` to handle nested pipelines.
+    """
+    pipes = [parse_pipe(p, pipelines=pipelines) for p in pipes]
+    return Pipeline(pipes, name=name)
+
+
+def parse_pipe(pipe, pipelines={}):
     """Parse a pipe from a config"""
     if isinstance(pipe, str):
-        pipe_cls = import_pipe(pipe)
-        return pipe_cls()
+        if pipe in pipelines:
+            return parse_pipeline(pipe, pipelines[pipe]['pipeline'], pipelines)
+        else:
+            pipe_cls = import_pipe(pipe)
+            return pipe_cls()
 
     elif isinstance(pipe, dict):
         if 'branch' in pipe:
@@ -44,8 +56,7 @@ def parse_conf(conf):
     pipelines = []
     for name, cfg in conf.items():
         endpoint = cfg['endpoint']
-        pipes = [parse_pipe(p) for p in cfg['pipeline']]
-        pipeline = Pipeline(pipes, name=name)
+        pipeline = parse_pipeline(name, cfg['pipeline'], conf)
         register_pipeline(endpoint, pipeline)
         pipelines.append((endpoint, pipeline))
     return pipelines

@@ -13,7 +13,7 @@ class TestPipe(Pipe):
 
 class TestPipe2(Pipe):
     input = int
-    output = int
+    output = [str]
 
 class NotPipe():
     pass
@@ -25,8 +25,17 @@ super_pipeline:
     pipeline:
         - tests.test_config.TestPipe
         - tests.test_config.TestPipe2
-        - tests.test_config.TestPipe2:
+        - tests.test_config.TestPipe:
             arg: 10
+'''
+
+nest_conf = '''
+other_pipeline:
+    endpoint: /other_pipeline
+    pipeline:
+        - tests.test_config.TestPipe
+        - tests.test_config.TestPipe2
+        - super_pipeline
 '''
 
 
@@ -80,3 +89,16 @@ class TestConfigParsing(unittest.TestCase):
     def test_nonexistant_module(self):
         pipe_ = 'foo.bar.TestPipe'
         self.assertRaises(ImportError, lambda: parse_pipe(pipe_))
+
+    def test_nested_pipelines(self):
+        conf = yaml.load('\n'.join([test_conf, nest_conf]))
+        pipelines = parse_conf(conf)
+        self.assertEqual(len(pipelines), 2)
+
+        expected_endpoints = ['/other_pipeline', '/super_pipeline']
+        sorted_pipelines = sorted(pipelines, key=lambda t: t[0])
+        for i, (endpoint, pipeline) in enumerate(sorted_pipelines):
+            self.assertEqual(endpoint, expected_endpoints[i])
+            self.assertIsInstance(pipeline, Pipeline)
+            if endpoint == '/other_pipeline':
+                self.assertIsInstance(pipeline.pipes[-1], Pipeline)
