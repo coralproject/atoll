@@ -15,6 +15,7 @@ setup(
         'six',
         'flask',
         'joblib',
+        'celery',
         'requests',
     ],
     test_requires=[
