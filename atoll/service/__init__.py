@@ -1,6 +1,6 @@
-from flask import Flask, Blueprint
 import pkgutil
 import importlib
+from flask import Flask, Blueprint
 
 
 def create_app(package_name=__name__, package_path=__path__, static_folder='static', template_folder='templates', **config_overrides):

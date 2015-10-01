@@ -1,7 +1,7 @@
 import yaml
 import unittest
 from atoll import Pipe, Pipeline
-from atoll.conf import parse_pipe, parse_conf
+from atoll.service.conf import parse_pipe, parse_pipelines
 
 
 class TestPipe(Pipe):
@@ -76,9 +76,9 @@ class TestConfigParsing(unittest.TestCase):
         pipe_ = 'tests.test_config.NotPipe'
         self.assertRaises(TypeError, lambda _: parse_pipe(pipe_))
 
-    def test_parse_conf(self):
+    def test_parse_pipelines(self):
         conf = yaml.load(test_conf)
-        pipelines = parse_conf(conf)
+        pipelines = parse_pipelines(conf)
         self.assertEqual(len(pipelines), 1)
 
         endpoint, pipeline = pipelines[0]
@@ -92,7 +92,7 @@ class TestConfigParsing(unittest.TestCase):
 
     def test_nested_pipelines(self):
         conf = yaml.load('\n'.join([test_conf, nest_conf]))
-        pipelines = parse_conf(conf)
+        pipelines = parse_pipelines(conf)
         self.assertEqual(len(pipelines), 2)
 
         expected_endpoints = ['/other_pipeline', '/super_pipeline']
