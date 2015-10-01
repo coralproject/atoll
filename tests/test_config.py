@@ -25,6 +25,8 @@ super_pipeline:
     pipeline:
         - tests.test_config.TestPipe
         - tests.test_config.TestPipe2
+        - tests.test_config.TestPipe2:
+            arg: 10
 '''
 
 
@@ -73,3 +75,8 @@ class TestConfigParsing(unittest.TestCase):
         endpoint, pipeline = pipelines[0]
         self.assertEqual(endpoint, '/super_pipeline')
         self.assertIsInstance(pipeline, Pipeline)
+        self.assertEqual(pipeline.pipes[-1].arg, 10)
+
+    def test_nonexistant_module(self):
+        pipe_ = 'foo.bar.TestPipe'
+        self.assertRaises(ImportError, lambda: parse_pipe(pipe_))
