@@ -1,4 +1,4 @@
-from atoll.service.tasks import async_pipeline
+from atoll.service.tasks import pipeline_task
 from flask import Blueprint, request, abort, jsonify
 
 bp = Blueprint('pipelines',
@@ -27,6 +27,6 @@ def register_pipeline(endpoint, pl):
                 'results': results
             })
         else:
-            async_pipeline(pl, input, data['callback'])
+            pipeline_task.delay(pl, input, data['callback'])
             return '', 202
     bp.add_url_rule(endpoint, pl.name, handler, methods=['POST'])
