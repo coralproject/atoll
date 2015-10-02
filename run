@@ -17,7 +17,7 @@ function worker {
 }
 
 function stop {
-    containers=$(sudo docker ps -a --filter=name=atoll | awk '{print $1}')
+    containers=$(sudo docker ps -aq --filter=name=atoll)
     sudo docker stop $containers
     sudo docker rm $containers
 }
