@@ -1,7 +1,7 @@
 import yaml
 import unittest
 from atoll import Pipe, Pipeline
-from atoll.service.conf import parse_pipe, parse_pipelines
+from atoll.service.conf.pipelines import parse_pipe, parse_pipelines
 
 
 class TestPipe(Pipe):
@@ -21,7 +21,7 @@ class NotPipe():
 
 test_conf = '''
 super_pipeline:
-    endpoint: /super_pipeline
+    endpoint: THE_ENDPOINT0
     pipeline:
         - tests.test_config.TestPipe
         - tests.test_config.TestPipe2
@@ -31,7 +31,7 @@ super_pipeline:
 
 nest_conf = '''
 other_pipeline:
-    endpoint: /other_pipeline
+    endpoint: THE_ENDPOINT1
     pipeline:
         - tests.test_config.TestPipe
         - tests.test_config.TestPipe2
@@ -39,9 +39,22 @@ other_pipeline:
 '''
 
 
+
 class TestConfigParsing(unittest.TestCase):
+    i = 0
+
     def setUp(self):
         self.importstr = 'tests.test_config.TestPipe'
+        self.endpoints = ['/super_pipeline{}'.format(self.i),
+                          '/other_pipeline{}'.format(self.i)]
+        self.i += 1
+
+    def _prep_conf(self, conf):
+        # To avoid conflicting blueprint endpoints,
+        # dynamically set the config's endpoints
+        for i in range(2):
+            conf = conf.replace('THE_ENDPOINT{}'.format(i), self.endpoints[i])
+        return yaml.load(conf)
 
     def test_string_pipe(self):
         pipe_ = self.importstr
@@ -77,12 +90,12 @@ class TestConfigParsing(unittest.TestCase):
         self.assertRaises(TypeError, lambda _: parse_pipe(pipe_))
 
     def test_parse_pipelines(self):
-        conf = yaml.load(test_conf)
+        conf = self._prep_conf(test_conf)
         pipelines = parse_pipelines(conf)
         self.assertEqual(len(pipelines), 1)
 
         endpoint, pipeline = pipelines[0]
-        self.assertEqual(endpoint, '/super_pipeline')
+        self.assertEqual(endpoint, self.endpoints[0])
         self.assertIsInstance(pipeline, Pipeline)
         self.assertEqual(pipeline.pipes[-1].arg, 10)
 
@@ -91,12 +104,12 @@ class TestConfigParsing(unittest.TestCase):
         self.assertRaises(ImportError, lambda: parse_pipe(pipe_))
 
     def test_nested_pipelines(self):
-        conf = yaml.load('\n'.join([test_conf, nest_conf]))
+        conf = self._prep_conf('\n'.join([test_conf, nest_conf]))
         pipelines = parse_pipelines(conf)
         self.assertEqual(len(pipelines), 2)
 
-        expected_endpoints = ['/other_pipeline', '/super_pipeline']
-        sorted_pipelines = sorted(pipelines, key=lambda t: t[0])
+        expected_endpoints = self.endpoints
+        sorted_pipelines = sorted(pipelines, key=lambda t: t[0], reverse=True)
         for i, (endpoint, pipeline) in enumerate(sorted_pipelines):
             self.assertEqual(endpoint, expected_endpoints[i])
             self.assertIsInstance(pipeline, Pipeline)

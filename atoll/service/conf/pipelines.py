@@ -1,25 +1,15 @@
-import os
 import yaml
 import importlib
 from atoll.pipeline import Pipeline, MetaPipe
 from atoll.service.pipelines import register_pipeline
-
-CONF_BASE = '/etc/atoll/conf'
-SERVICE_CONF = {
-    'worker_host': 'localhost'
-}
-
-service_conf_path = os.path.join(CONF_BASE, 'service.yaml')
-if os.path.exists(service_conf_path):
-    with open(service_conf_path, 'r') as f:
-        SERVICE_CONF.update(yaml.load(f))
 
 
 def load_pipeline_conf(path):
     """Loads a pipelines yaml config"""
     with open(path, 'r') as f:
         conf = yaml.load(f)
-    return parse_pipelines(conf)
+    for endpoint, pipeline in parse_pipelines(conf):
+        register_pipeline(endpoint, pipeline)
 
 
 def parse_pipeline(name, pipes, pipelines):
@@ -68,6 +58,5 @@ def parse_pipelines(conf):
     for name, cfg in conf.items():
         endpoint = cfg['endpoint']
         pipeline = parse_pipeline(name, cfg['pipeline'], conf)
-        register_pipeline(endpoint, pipeline)
         pipelines.append((endpoint, pipeline))
     return pipelines

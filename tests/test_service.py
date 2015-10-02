@@ -3,10 +3,15 @@ import unittest
 import httpretty
 from atoll.service import create_app
 from atoll import Pipe, Pipeline, register_pipeline
+from atoll.service.tasks import celery
+
+# force celery to be synchronous for testing
+celery.conf.update(CELERY_ALWAYS_EAGER=True)
 
 test_config = {
     'TESTING': True
 }
+
 
 class LowercasePipe(Pipe):
     """
@@ -19,7 +24,7 @@ class LowercasePipe(Pipe):
         return [s.lower() for s in input]
 
 # pipelines must be registered _before_ creating the app!
-pipeline = Pipeline([LowercasePipe()])
+pipeline = Pipeline([LowercasePipe()], name="example_pipeline")
 register_pipeline('/example', pipeline)
 
 
@@ -54,5 +59,6 @@ class ServiceTest(unittest.TestCase):
 
         resp_json = json.loads(httpretty.last_request().body.decode('utf-8'))
         self.assertEquals({
-            'results': ['aa', 'bb']
+            'results': ['aa', 'bb'],
+            'error': None
         }, resp_json)
