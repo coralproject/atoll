@@ -16,10 +16,14 @@ function worker {
     sudo docker run -v $PWD:/home/user --link atoll-rabbitmq:rabbit --name atoll-celery$i -d celery
 }
 
-function stop_celery {
+function stop {
     containers=$(sudo docker ps -a --filter=name=atoll | awk '{print $1}')
     sudo docker stop $containers
     sudo docker rm $containers
+}
+
+function status {
+    sudo docker run --link atoll-rabbitmq:rabbit --rm celery celery status
 }
 
 
