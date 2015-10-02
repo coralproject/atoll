@@ -17,7 +17,7 @@ Then you can post data in the proper format (as a JSON object with your data at 
 
 (Assuming you are running the microservice locally on port 5001)
 
-True asynchronous support has not yet been added yet, but you can additionally specify a callback url to run the task asynchronously::
+You can additionally specify a callback url to run the task asynchronously::
 
     curl -X POST -H "Content-Type: application/json" -d '{"data": ["this is a test", "another test"], "callback": "http://mysite.com/callback"}' http://localhost:5001/pipelines/percent_vowel_endings
     {"results": [0.25, 0]} will be POSTed to the callback url
