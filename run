@@ -1,0 +1,36 @@
+#!/bin/bash
+
+function setup {
+    sudo docker pull rabbitmq:3-management
+    sudo docker pull celery:latest
+}
+
+function rabbitmq {
+    sudo docker run --name atoll-rabbitmq -p 8080:15672 -p 5672:5672 -d rabbitmq:3-management
+    RABBITMQ_IP=$(sudo docker inspect --format '{{.NetworkSettings.IPAddress}}' $(sudo docker ps -aq --filter=name=atoll-rabbitmq))
+    echo "RabbitMQ is running at: $RABBITMQ_IP"
+}
+
+function worker {
+    i=$(sudo docker ps -aq --filter=name=atoll-celery | wc -l)
+    sudo docker run -v $PWD:/home/user --link atoll-rabbitmq:rabbit --name atoll-celery$i -d celery
+}
+
+function stop {
+    containers=$(sudo docker ps -a --filter=name=atoll | awk '{print $1}')
+    sudo docker stop $containers
+    sudo docker rm $containers
+}
+
+function status {
+    sudo docker run --link atoll-rabbitmq:rabbit --rm celery celery status
+}
+
+
+if [ -z $1 ]; then
+    echo "Tell me what to do"
+elif [ "$(type -t $1)" == 'function' ]; then
+    $1
+else
+    echo "Didn't recognize the command '$1'"
+fi

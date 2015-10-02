@@ -1,5 +1,4 @@
-import json
-import requests
+from atoll.service.tasks import pipeline_task
 from flask import Blueprint, request, abort, jsonify
 
 bp = Blueprint('pipelines',
@@ -18,17 +17,16 @@ def register_pipeline(endpoint, pl):
         data = request.get_json()
         if 'data' not in data:
             abort(400)
+        input = data['data']
 
-        # jsonifying will be a problem, how to coerce into json reliably?
-        results = pl(data['data'])
-        payload = {
-            'results': results
-        }
         if 'callback' not in data:
-            return jsonify(payload)
+            results = pl(input)
+
+            # jsonifying will be a problem, how to coerce into json reliably?
+            return jsonify({
+                'results': results
+            })
         else:
-            # TODO to be truly asynchronous, this needs to send the job to a
-            # worker
-            requests.post(data['callback'], data=json.dumps(payload))
+            pipeline_task.delay(pl, input, data['callback'])
             return '', 202
     bp.add_url_rule(endpoint, pl.name, handler, methods=['POST'])
