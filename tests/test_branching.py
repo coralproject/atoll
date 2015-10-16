@@ -254,7 +254,6 @@ class BranchingPipelineTests(unittest.TestCase):
         p = Pipeline([A()]).fork(B(), C(), D())
         self.assertRaises(InvalidPipelineError, p.to, E())
 
-    # TODO
     def test_valid_branching_pipeline_start_with_branches(self):
         class B(Pipe):
             input = Bin
@@ -273,108 +272,84 @@ class BranchingPipelineTests(unittest.TestCase):
             output = Eout
 
         try:
-            Pipeline([
-                (B(), C(), D()),
-                E()
-            ])
+            Pipeline().fork(B(), C(), D()).to(E())
         except InvalidPipelineError:
             self.fail('Valid pipeline raised exception')
 
-    # def test_valid_branching_pipeline_end_with_branches(self):
-        # class A(Pipe):
-            # input = Ain
-            # # A does not output tuples
-            # output = Aout
+    def test_valid_branching_pipeline_end_with_branches(self):
+        class A(Pipe):
+            input = Ain
+            # A does not output tuples
+            output = Aout
 
-        # class B(Pipe):
-            # input = A.output
-            # output = Bout
+        class B(Pipe):
+            input = A.output
+            output = Bout
 
-        # class C(Pipe):
-            # input = A.output
-            # output = Cout
+        class C(Pipe):
+            input = A.output
+            output = Cout
 
-        # class D(Pipe):
-            # input = A.output
-            # output = Dout
+        class D(Pipe):
+            input = A.output
+            output = Dout
 
-        # try:
-            # Pipeline([
-                # A(),
-                # (B(), C(), D()),
-            # ])
-        # except InvalidPipelineError:
-            # self.fail('Valid pipeline raised exception')
+        try:
+            Pipeline([A()]).fork(B(), C(), D())
+        except InvalidPipelineError:
+            self.fail('Valid pipeline raised exception')
 
-    # def test_branching_pipeline(self):
-        # p = Pipeline([
-            # Ap(),
-            # (Bp(), Cp()),
-            # (Bp(), Cp()),
-            # Ep()
-        # ])
+    def test_branching_pipeline(self):
+        p = Pipeline([Ap()]).fork(Bp(), Cp()).split(Bp(), Cp()).to(Ep())
+        out = p([1,2,3,4])
+        self.assertEqual(out, [14,16,18,20])
 
-        # out = p([1,2,3,4])
-        # self.assertEqual(out, [14,16,18,20])
+    def test_parallel_branching(self):
+        p = Pipeline([Ap()], n_jobs=2).fork(Bp(), Cp()).split(Bp(), Cp()).to(Ep())
+        out = p([1,2,3,4])
+        self.assertEqual(out, [14,16,18,20])
 
-    # def test_parallel_branching(self):
-        # p = Pipeline([
-            # Ap(),
-            # (Bp(), Cp()),
-            # (Bp(), Cp()),
-            # Ep()
-        # ], n_jobs=2)
+    def test_identity_pipes(self):
+        class A(Pipe):
+            input = Ain
+            # A does not output tuples
+            output = Aout
 
-        # out = p([1,2,3,4])
-        # self.assertEqual(out, [14,16,18,20])
+        class B(Pipe):
+            input = A.output
+            output = Bout
 
-    # def test_identity_pipes(self):
-        # class A(Pipe):
-            # input = Ain
-            # # A does not output tuples
-            # output = Aout
+        class C(Pipe):
+            input = A.output
+            output = Cout
 
-        # class B(Pipe):
-            # input = A.output
-            # output = Bout
+        class E(Pipe):
+            input = (B.output, C.output, A.output)
+            output = Eout
 
-        # class C(Pipe):
-            # input = A.output
-            # output = Cout
+        try:
+            Pipeline([A()]).fork(B(), C(), None).to(E())
+        except InvalidPipelineError:
+            self.fail('Valid pipeline raised exception')
 
-        # class E(Pipe):
-            # input = (B.output, C.output, A.output)
-            # output = Eout
+    def test_invalid_identity_pipes(self):
+        class A(Pipe):
+            input = Ain
+            # A does not output tuples
+            output = Aout
 
-        # try:
-            # Pipeline([
-                # A(),
-                # (B(), C(), None),
-                # E()
-            # ])
-        # except InvalidPipelineError:
-            # self.fail('Valid pipeline raised exception')
+        class B(Pipe):
+            input = A.output
+            output = Bout
 
-    # def test_invalid_identity_pipes(self):
-        # class A(Pipe):
-            # input = Ain
-            # # A does not output tuples
-            # output = Aout
+        class C(Pipe):
+            input = A.output
+            output = Cout
 
-        # class B(Pipe):
-            # input = A.output
-            # output = Bout
+        class E(Pipe):
+            input = (B.output, C.output, X)
+            output = Eout
 
-        # class C(Pipe):
-            # input = A.output
-            # output = Cout
-
-        # class E(Pipe):
-            # input = (B.output, C.output, X)
-            # output = Eout
-
-        # self.assertRaises(InvalidPipelineError,
-                          # Pipeline, [A(),
-                                     # (B(), C(), None),
-                                     # E()])
+        p = Pipeline([A()]).fork(B(), C(), None)
+        self.assertRaises(InvalidPipelineError, p.to, E())
 

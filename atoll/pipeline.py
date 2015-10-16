@@ -122,14 +122,10 @@ class Pipe():
 
 
 class Pipeline():
-    def __init__(self, pipes, **kwargs):
-        self.pipes = pipes[:1]
-
-        for pipe in pipes[1:]:
+    def __init__(self, pipes=[], **kwargs):
+        self.pipes = []
+        for pipe in pipes:
             self.to(pipe)
-
-        self._input = pipes[0]._input
-        self._output = pipes[-1]._output
 
         self.n_jobs = kwargs.get('n_jobs', 0)
         self._name = kwargs.get('name', None)
@@ -179,40 +175,62 @@ class Pipeline():
 
     # Pipeline composition methods
     def to(self, pipe):
-        if self._validate(self.pipes[-1], pipe):
+
+        if self.pipes and self._validate(self.pipes[-1], pipe):
             self.pipes.append(pipe)
             self._output = pipe._output
+        else:
+            self.pipes.append(pipe)
+            self._input = pipe._input
+            self._output = pipe._output
+
         return self
 
     def fork(self, *branches):
         branches = BranchedPipe(branches, self.n_jobs)
         next_type = branches._input
 
+        # TODO clean this up
         # Check for identity pipes
-        for i, ch in enumerate(next_type.children):
-            if ch is None:
-                # The identity pipe's input and output
-                # depend on the pipe that feeds into it,
-                # so update its input and output here
-                next_type.children[i] = next_type.children[i]
+        if self.pipes:
+            prev_type = self.pipes[-1]._output
+            next_type = branches._input
+            for i, ch in enumerate(next_type.children):
+                if ch is None:
+                    # The identity pipe's input and output
+                    # depend on the pipe that feeds into it,
+                    # so update its input and output here
+                    next_type.children[i] = prev_type
+                    branches._output.children[i] = prev_type
+                    branches.pipes[i]._input = prev_type
+                    branches.pipes[i]._output = prev_type
 
         # TODO clean this up, validating manually here
-        for branch in branches.pipes:
-            self._validate(self.pipes[-1], branch)
+        if self.pipes:
+            for branch in branches.pipes:
+                self._validate(self.pipes[-1], branch)
+        else:
+            self._input = branches._input
         self.pipes.append(branches)
+        self._output = branches._output
         return self
 
     def split(self, *branches):
         branches = BranchedPipe(branches, self.n_jobs)
-        next_type = branches._input
 
         # Check for identity pipes
-        for i, ch in enumerate(next_type.children):
-            if ch is None:
-                # The identity pipe's input and output
-                # depend on the pipe that feeds into it,
-                # so update its input and output here
-                next_type.children[i] = next_type.children[i]
+        if self.pipes:
+            prev_type = self.pipes[-1]._output
+            next_type = branches._input
+            for i, ch in enumerate(next_type.children):
+                if ch is None:
+                    # The identity pipe's input and output
+                    # depend on the pipe that feeds into it,
+                    # so update its input and output here
+                    next_type.children[i] = prev_type.children[i]
+                    branches._output.children[i] = prev_type.children[i]
+                    branches.pipes[i]._input = prev_type
+                    branches.pipes[i]._output = prev_type
 
         self.to(branches)
         return self
