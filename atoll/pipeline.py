@@ -123,48 +123,27 @@ class Pipe():
 
 class Pipeline():
     def __init__(self, pipes, **kwargs):
-        self.pipes = []
+        self.pipes = pipes[:1]
+
+        for pipe in pipes[1:]:
+            self.to(pipe)
+
+        self._input = pipes[0]._input
+        self._output = pipes[-1]._output
+
         self.n_jobs = kwargs.get('n_jobs', 0)
+        self._name = kwargs.get('name', None)
 
-        # Process branches as necessary
-        for p in pipes:
-            if isinstance(p, tuple):
-                self.pipes.append(BranchedPipe(p, self.n_jobs))
-            else:
-                self.pipes.append(p)
+    def _validate(self, p_out, p_in):
+        output = p_out._output
+        input = p_in._input
 
-        # Validate the pipeline
-        for p_out, p_in in zip(self.pipes, self.pipes[1:]):
-            output = p_out._output
-            input = p_in._input
+        if not input.accepts(output):
+            msg = 'Incompatible pipes:\npipe {} outputs {},\npipe {} requires input of {}.'.format(p_out.name, output, p_in.name, input)
+            logger.error(msg)
+            raise InvalidPipelineError(msg)
 
-            if isinstance(p_in, BranchedPipe):
-                # If the output is not a tuple,
-                # we are replicating it across each branch (one-to-branch)
-                if output.type != tuple:
-                    output = TypeNode(tuple, ch=[output for i in input.children])
-
-                # Check for identity pipes
-                for i, ch in enumerate(input.children):
-                    if ch is None:
-                        # The identity pipe's input and output
-                        # depend on the pipe that feeds into it,
-                        # so update its input and output here
-                        input.children[i] = output.children[i]
-                        p_in._output.children[i] = output.children[i]
-
-            if not input.accepts(output):
-                msg = 'Incompatible pipes:\npipe {} outputs {},\npipe {} requires input of {}.'.format(p_out.name, output, p_in.name, input)
-                logger.error(msg)
-                raise InvalidPipelineError(msg)
-
-        # Pipelines can be nested
-        self._input = self.pipes[0]._input
-        self._output = self.pipes[-1]._output
-
-        # Ideally users should name their own pipelines
-        # so they know what a pipeline does, but a fallback is offered
-        self.name = kwargs.get('name', self.sig)
+        return True
 
     def __call__(self, input):
         for pipe in self.pipes:
@@ -183,6 +162,12 @@ class Pipeline():
         return ' -> '.join([str(p) for p in self.pipes])
 
     @property
+    def name(self):
+        # Ideally users should name their own pipelines
+        # so they know what a pipeline does, but a fallback is offered
+        return self._name if self._name is not None else self.sig
+
+    @property
     def sig(self):
         """
         Produce a sig of the pipeline.
@@ -190,3 +175,44 @@ class Pipeline():
         but note that it does not (yet) account for stochastic pipes!
         """
         return md5('->'.join([p.sig for p in self.pipes]).encode('utf-8')).hexdigest()
+
+
+    # Pipeline composition methods
+    def to(self, pipe):
+        if self._validate(self.pipes[-1], pipe):
+            self.pipes.append(pipe)
+            self._output = pipe._output
+        return self
+
+    def fork(self, *branches):
+        branches = BranchedPipe(branches, self.n_jobs)
+        next_type = branches._input
+
+        # Check for identity pipes
+        for i, ch in enumerate(next_type.children):
+            if ch is None:
+                # The identity pipe's input and output
+                # depend on the pipe that feeds into it,
+                # so update its input and output here
+                next_type.children[i] = next_type.children[i]
+
+        # TODO clean this up, validating manually here
+        for branch in branches.pipes:
+            self._validate(self.pipes[-1], branch)
+        self.pipes.append(branches)
+        return self
+
+    def split(self, *branches):
+        branches = BranchedPipe(branches, self.n_jobs)
+        next_type = branches._input
+
+        # Check for identity pipes
+        for i, ch in enumerate(next_type.children):
+            if ch is None:
+                # The identity pipe's input and output
+                # depend on the pipe that feeds into it,
+                # so update its input and output here
+                next_type.children[i] = next_type.children[i]
+
+        self.to(branches)
+        return self
