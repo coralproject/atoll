@@ -1,5 +1,5 @@
 import unittest
-from atoll.validate import build_tree, _dict_to_struct
+from atoll.validate import build_tree, _dict_to_struct, t
 
 
 class TestTypeTrees(unittest.TestCase):
@@ -123,7 +123,7 @@ class TestDictStruct(unittest.TestCase):
     def test_recursive_dict_to_struct(self):
         input = {
             'sup': int,
-            'hey': ['self']
+            'hey': [t.self]
         }
         s1 = _dict_to_struct(input)
         s2 = _dict_to_struct(input)
@@ -167,11 +167,11 @@ class TestValidation(unittest.TestCase):
 
     def test_dict_recursion_validation(self):
         output = {
-            'sup': 'self',
+            'sup': t.self,
             'hey': [(int, str)]
         }
         input = {
-            'sup': 'self'
+            'sup': t.self
         }
         root_input = build_tree(input)
         root_output = build_tree(output)

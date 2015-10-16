@@ -4,6 +4,14 @@ from hashlib import md5
 from collections import namedtuple
 
 
+class t:
+    """
+    Special types
+    """
+    any = types.new_class('any')
+    self = types.new_class('self') # Recursion
+
+
 def build_tree(input):
     """
     Expand a type signature into a tree of type nodes
@@ -31,10 +39,6 @@ def build_tree(input):
 
     elif typ is dict:
         return TypeNode(_dict_to_struct(input), struct=True)
-
-    # special recursion case
-    elif input == 'self':
-        return TypeNode('self')
 
     else:
         raise TypeError('Unsupported type: {}'.format(typ))

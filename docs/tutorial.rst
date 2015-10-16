@@ -78,7 +78,7 @@ When defining a new pipe, the first considerations are:
 
 In our case, we are only concerned with thread length and number of participants, so the only information in our raw data that we care about are the ``replies`` and the ``user`` keys. So as input, we want a list of dictionaries with those keys.
 
-The ``user`` key will just be a string, but the ``replies`` key will be recursive, in that it can contain more of these dictionaries. Atoll uses the keyword ``self`` to indicate a recursive type.
+The ``user`` key will just be a string, but the ``replies`` key will be recursive, in that it can contain more of these dictionaries. Atoll uses the special type ``t.self`` to indicate a recursive type.
 
 Because we are building the pipe to transform our raw data into ``Thread`` objects, we know we need to output a list of them.
 
@@ -86,10 +86,12 @@ Thus we can define our pipe like so:
 
 .. code-block:: python
 
+    from atoll import t
+
     class ThreadsTransform(Pipe):
         input = [{
             'user': str,
-            'replies': ['self']
+            'replies': [t.self]
         }]
         output = [Thread]
 

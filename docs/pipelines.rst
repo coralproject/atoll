@@ -58,8 +58,9 @@ There is some support for recursive types, i.e::
 
 The above can be represented as::
 
+    from atoll import t
     {
-        'replies': ['self']
+        'replies': [t.self]
     }
 
 
