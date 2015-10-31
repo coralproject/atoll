@@ -30,9 +30,42 @@ class MetaPipe(type):
                           '\nInput:', str(self._input),
                           '\nOutput:', str(self._output)])
 
+
+class MappedPipe():
+    """
+    A special type of pipe representing mapped pipes
+    """
+    def __init__(self, pipe, n_jobs):
+        self.pipe = pipe
+        self.n_jobs = n_jobs
+        self._input = TypeNode(list, ch=[pipe._input])
+        self._output = TypeNode(list, ch=[pipe._output])
+
+        self.name = '[{}]'.format(pipe.name)
+        self.sig = '[{}]'.format(pipe.sig)
+
+    def __call__(self, inputs):
+        # TODO clean this up
+        if isinstance(inputs, dict):
+            inputs = inputs.items()
+            if self.n_jobs != 0:
+                return Parallel(n_jobs=self.n_jobs)(delayed(self.pipe)(*i) for i in inputs)
+            else:
+                return [self.pipe(*i) for i in inputs]
+
+        else:
+            if self.n_jobs != 0:
+                return Parallel(n_jobs=self.n_jobs)(delayed(self.pipe)(i) for i in inputs)
+            else:
+                return [self.pipe(i) for i in inputs]
+
+    def __repr__(self):
+        return self.sig
+
+
 class BranchedPipe():
     """
-    A special type of pipe for representing branched pipes
+    A special type of pipe representing branched pipes
     """
     def __init__(self, pipes, n_jobs):
         # Check for any identity pipes
@@ -175,7 +208,6 @@ class Pipeline():
 
     # Pipeline composition methods
     def to(self, pipe):
-
         if self.pipes and self._validate(self.pipes[-1], pipe):
             self.pipes.append(pipe)
             self._output = pipe._output
@@ -183,6 +215,20 @@ class Pipeline():
             self.pipes.append(pipe)
             self._input = pipe._input
             self._output = pipe._output
+
+        return self
+
+    def map(self, pipe):
+        mapped = MappedPipe(pipe, self.n_jobs)
+
+        if self.pipes and self._validate(self.pipes[-1], mapped):
+            self._input
+            self.pipes.append(mapped)
+            self._output = mapped._output
+        else:
+            self.pipes.append(mapped)
+            self._input = mapped._input
+            self._output = mapped._output
 
         return self
 
