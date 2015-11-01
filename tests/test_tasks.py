@@ -1,21 +1,15 @@
 import json
 import unittest
 import httpretty
-from atoll import Pipe, Pipeline
+from atoll import Pipeline
 from atoll.service.tasks import pipeline_task
 
 
-class LowercasePipe(Pipe):
-    input = [str]
-    output = [str]
-    def __call__(self, input):
-        return [s.lower() for s in input]
+def lowercase(input):
+    return input.lower()
 
-class ExceptionPipe(Pipe):
-    input = [str]
-    output = [str]
-    def __call__(self, input):
-        raise Exception('exc message')
+def exception(input):
+    raise Exception('exc message')
 
 
 class TasksTest(unittest.TestCase):
@@ -23,7 +17,7 @@ class TasksTest(unittest.TestCase):
     @httpretty.activate
     def test_pipeline_success(self):
         httpretty.register_uri(httpretty.POST, "http://sup.com/callback")
-        pipeline = Pipeline([LowercasePipe()])
+        pipeline = Pipeline().map(lowercase)
         pipeline_task.apply(args=(pipeline, ['AA', 'BB'], 'http://sup.com/callback')).get()
 
         resp_json = json.loads(httpretty.last_request().body.decode('utf-8'))
@@ -35,7 +29,7 @@ class TasksTest(unittest.TestCase):
     @httpretty.activate
     def test_pipeline_failure(self):
         httpretty.register_uri(httpretty.POST, "http://sup.com/callback")
-        pipeline = Pipeline([ExceptionPipe()])
+        pipeline = Pipeline().map(exception)
         pipeline_task.apply(args=(pipeline, ['AA', 'BB'], 'http://sup.com/callback')).get()
 
         resp_json = json.loads(httpretty.last_request().body.decode('utf-8'))
