@@ -1,60 +1,82 @@
 import random
 import logging
 from hashlib import md5
-import atoll.pipes as p
+from joblib import Parallel, delayed
+from atoll.pipes import Pipe, Branches
 from atoll.friendly import get_example
 
 logger = logging.getLogger(__name__)
 
 
-class Pipeline(p._pipe):
-    def __init__(self, pipes=[], **kwargs):
-        self.__n_jobs = kwargs.get('n_jobs', 0)
+def composition(f):
+    def decorated(self, func, *args, **kwargs):
+        assert ((not isinstance(func, type)) and callable(func)) or func is None, 'Pipes must be callable'
+
+        if isinstance(func, Pipeline):
+            pipe = func
+        else:
+            pipe = f(self, func, *args, **kwargs)
+        self.expected_kwargs += pipe.expected_kwargs
+        self.pipes.append((f.__name__, pipe))
+        return self
+    return decorated
+
+
+def execution(f):
+    def decorated(self, pipe, input, **kwargs):
+        kwargs_ = {}
+        for key in pipe.expected_kwargs:
+            try:
+                kwargs_[key] = kwargs[key]
+            except KeyError:
+                raise KeyError('Missing expected keyword argument: {}'.format(key))
+        return f(self, pipe, input, **kwargs_)
+    return decorated
+
+
+class Pipeline(Pipe):
+    def __init__(self, **kwargs):
         self._name = kwargs.get('name', None)
         self.expected_kwargs = []
-
-        # TODO add distributed support
-        self.distributed = False
-        if self.distributed:
-            raise Exception('distributed computing not yet supported')
-
         self.pipes = []
-        for pipe in pipes:
-            self.to(pipe)
 
-    def __call__(self, input, validate=False, **kwargs):
+    def func(self, input, **kwargs):
+        return self(input, nested=True, **kwargs)
+
+    def __call__(self, input, n_jobs=1, distributed=False, validate=False, nested=False, **kwargs):
         """
         Specify `validate=True` to first
         check the pipeline with a random sample from the input
         before running on the entire input.
         """
-        if validate:
-            self.validate(input)
+        #if distributed and not nested:
+            ## construct proper pipeline
+            #pass
 
-        for pipe in self.pipes:
+        if validate and not nested:
+            self.validate(input, n_jobs=n_jobs)
+
+        if nested:
+            self.parallel = self._serial
+        else:
+            self.parallel = Parallel(n_jobs=n_jobs)
+
+        for op, pipe in self.pipes:
             try:
-                output = pipe(input, **kwargs)
+                print('calling', pipe)
+                input = getattr(self, '_' + op)(pipe, input, **kwargs)
             except:
-                logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(pipe,
-                                                                                    pipe.sig,
-                                                                                    get_example(input)))
+                logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(
+                    pipe,
+                    pipe.sig,
+                    get_example(input)))
                 raise
-            input = output
-        return output
 
-
-    @property
-    def n_jobs(self):
-        return self.__n_jobs
-
-    @n_jobs.setter
-    def n_jobs(self, val):
-        self.__n_jobs = val
-        for pipe in self.pipes:
-            pipe.n_jobs = val
+        del self.parallel
+        return input
 
     def __repr__(self):
-        return ' -> '.join([str(pipe) for pipe in self.pipes])
+        return ' -> '.join(['{}:{}'.format(op, pipe) for op, pipe in self.pipes])
 
     @property
     def name(self):
@@ -69,9 +91,9 @@ class Pipeline(p._pipe):
         This is for establishing data analysis provenance,
         but note that it does not (yet) account for stochastic pipes!
         """
-        return md5('->'.join([str(pipe) for pipe in self.pipes]).encode('utf-8')).hexdigest()
+        return md5('->'.join(['{}:{}'.format(op, pipe) for op, pipe in self.pipes]).encode('utf-8')).hexdigest()
 
-    def validate(self, data, n=1):
+    def validate(self, data, n_jobs=1, n=1):
         """
         Approximately validate the pipeline
         using a "canary" method, i.e. compute on
@@ -81,29 +103,51 @@ class Pipeline(p._pipe):
         without error, but a good approximation.
         """
         sample = random.sample(data, n)
-        self(sample, validate=False)
+        self(sample, n_jobs=n_jobs, validate=False)
 
-    # Pipeline composition methods
+    @composition
     def to(self, func, *args, **kwargs):
-        assert((not isinstance(func, type)) and (callable(func)))
+        return Pipe(func, *args, **kwargs)
 
-        self.expected_kwargs += kwargs.get('kwargs', [])
-
-        if not isinstance(func, p._pipe) \
-                and not isinstance(func, p._branches):
-            self.pipes.append(p._pipe(0, func, *args, **kwargs))
-        else:
-            self.pipes.append(func)
-        return self
-
+    @composition
     def map(self, func, *args, **kwargs):
-        return self.to(p._map(self.n_jobs, func, *args, **kwargs), **kwargs)
+        return Pipe(func, *args, **kwargs)
 
+    @composition
     def map_dict(self, func, *args, **kwargs):
-        return self.to(p._map_dict(self.n_jobs, func, *args, **kwargs), **kwargs)
+        return Pipe(func, *args, **kwargs)
 
+    @composition
     def fork(self, *funcs):
-        return self.to(p._fork(self.n_jobs, funcs))
+        return Branches(funcs)
 
+    @composition
     def split(self, *funcs):
-        return self.to(p._split(self.n_jobs, funcs))
+        return Branches(funcs)
+
+    @execution
+    def _to(self, pipe, input, **kwargs):
+        if not isinstance(input, tuple):
+            input = (input,)
+        return pipe.func(*input, **kwargs)
+
+    @execution
+    def _map(self, pipe, input, **kwargs):
+        if not isinstance(input[0], tuple):
+            input = [(i,) for i in input]
+        return self.parallel(delayed(pipe.func)(*i, **kwargs) for i in input)
+
+    @execution
+    def _map_dict(self, pipe, input, **kwargs):
+        return self.parallel(delayed(pipe.func)(*i, **kwargs) for i in input.items())
+
+    @execution
+    def _fork(self, branches, input, **kwargs):
+        return tuple(self.parallel(delayed(b.func)(input, **kwargs) for b in branches))
+
+    @execution
+    def _split(self, branches, input, **kwargs):
+        return tuple(self.parallel(delayed(b.func)(i, **kwargs) for b, i in zip(branches, input)))
+
+    def _serial(self, stream):
+        return [func(*args, **kwargs) for func, args, kwargs in stream]

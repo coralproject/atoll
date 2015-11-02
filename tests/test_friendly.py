@@ -21,16 +21,16 @@ class FriendlyTests(unittest.TestCase):
         self.assertEqual(_get_name(f), 'f = lambda x,y: x+y')
 
     def test_pipeline_signature(self):
-        p = Pipeline([add, Adder()])
-        self.assertEqual(p.sig, 'a47a9b20be1e03f6ad550ce0a1911c42')
+        p = Pipeline().to(add).to(Adder())
+        self.assertEqual(p.sig, '1f3c5e11d0facd1e488cf225227f5d26')
 
     def test_pipeline_repr(self):
-        p = Pipeline([add, Adder()])
-        self.assertEqual(str(p), 'add -> Adder')
+        p = Pipeline().to(add).to(Adder())
+        self.assertEqual(str(p), 'to:add -> to:Adder')
 
     def test_pipeline_branching_repr(self):
-        p = Pipeline([add]).fork(add, add)
-        self.assertEqual(str(p), 'add -> fork[add|add]')
+        p = Pipeline().to(add).fork(add, add)
+        self.assertEqual(str(p), 'to:add -> fork:add|add')
 
     def test_examples(self):
         input = [1,2,3,4]

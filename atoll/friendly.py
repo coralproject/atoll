@@ -28,11 +28,11 @@ def name(func, *args, **kwargs):
 
 def signature(func):
     if inspect.isclass(func):
-        return inspect.signature(func.__call__)
+        return str(inspect.signature(func.__call__))
     elif isinstance(func, partial):
-        return signature(func.func)
+        return str(signature(func.func))
     else:
-        return inspect.signature(func)
+        return str(inspect.signature(func))
 
 
 def get_example(input):

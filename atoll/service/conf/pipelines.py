@@ -1,6 +1,6 @@
 import yaml
 import importlib
-from atoll.pipeline import Pipeline, MetaPipe
+from atoll.pipeline import Pipeline
 from atoll.service.pipelines import register_pipeline
 
 
@@ -27,16 +27,26 @@ def parse_pipe(pipe, pipelines={}):
         if pipe in pipelines:
             return parse_pipeline(pipe, pipelines[pipe]['pipeline'], pipelines)
         else:
-            pipe_cls = import_pipe(pipe)
-            return pipe_cls()
+            func = import_pipe(pipe)
+            if isinstance(func, type):
+                func = func()
+            if not callable(func):
+                raise TypeError('Pipes must be callable')
+            return func
 
     elif isinstance(pipe, dict):
         if 'branch' in pipe:
             return parse_pipe(pipe['branch'])
 
         (pipe, args), = pipe.items()
-        pipe_cls = import_pipe(pipe)
-        return pipe_cls(**args)
+        func = import_pipe(pipe)
+
+        if isinstance(func, type):
+            func = func(**args)
+        if not callable(func):
+            raise TypeError('Pipes must be callable')
+        #TODO this doesnt support args/kwargs for funcs
+        return func
 
     elif isinstance(pipe, list):
         return tuple(parse_pipe(p) for p in pipe)
@@ -44,12 +54,9 @@ def parse_pipe(pipe, pipelines={}):
 
 def import_pipe(pipe):
     """Import a pipe based on a module string"""
-    mod, cls = pipe.rsplit('.', 1)
+    mod, func_name = pipe.rsplit('.', 1)
     mod = importlib.import_module(mod)
-    pipe_cls = getattr(mod, cls)
-    if type(pipe_cls) is not MetaPipe:
-        raise TypeError('Pipes must subclass atoll.Pipe')
-    return pipe_cls
+    return getattr(mod, func_name)
 
 
 def parse_pipelines(conf):
