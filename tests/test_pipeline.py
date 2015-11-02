@@ -98,3 +98,7 @@ class PipelineTests(unittest.TestCase):
         pipeline = Pipeline().map(add, 4)
         output = pipeline([1,2])
         self.assertEqual(output, expected)
+
+    def test_validation(self):
+        pipeline = Pipeline().map(tokenize_single)
+        self.assertRaises(AttributeError, pipeline.validate, [[1,2,3],[4,5,6]])

@@ -1,3 +1,4 @@
+import random
 import logging
 from hashlib import md5
 import atoll.pipes as p
@@ -35,7 +36,15 @@ class Pipeline():
         for pipe in pipes:
             self.to(pipe)
 
-    def __call__(self, input):
+    def __call__(self, input, validate=False):
+        """
+        Specify `validate=True` to first
+        check the pipeline with a random sample from the input
+        before running on the entire input.
+        """
+        if validate:
+            self.validate(input)
+
         for pipe in self.pipes:
             try:
                 output = pipe(input)
@@ -75,6 +84,18 @@ class Pipeline():
         but note that it does not (yet) account for stochastic pipes!
         """
         return md5('->'.join([str(pipe) for pipe in self.pipes]).encode('utf-8')).hexdigest()
+
+    def validate(self, data, n=1):
+        """
+        Approximately validate the pipeline
+        using a "canary" method, i.e. compute on
+        a random sample and see if it doesn't break.
+
+        Does not guarantee that the pipeline will run
+        without error, but a good approximation.
+        """
+        sample = random.sample(data, n)
+        self(sample, validate=False)
 
     # Pipeline composition methods
     def to(self, func, *args, **kwargs):
