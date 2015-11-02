@@ -2,30 +2,16 @@ import random
 import logging
 from hashlib import md5
 import atoll.pipes as p
+from atoll.friendly import get_example
 
 logger = logging.getLogger(__name__)
 
 
-def get_example(input):
-    """
-    Produce an "example" out of some input.
-    """
-    if isinstance(input, tuple):
-        return '({})'.format(','.join('{}'.format(get_example(i)) for i in input))
-    if isinstance(input, dict):
-        return '{{{}}}'.format(','.join('{}:{}'.format(k, get_example(v)) for k, v in input.items()))
-    if hasattr(input, '__iter__') and not isinstance(input, str):
-        example = next(iter(input))
-        return '[{},...]'.format(get_example(example))
-    else:
-        example = input
-    return str(example)
-
-
-class Pipeline():
+class Pipeline(p._pipe):
     def __init__(self, pipes=[], **kwargs):
         self.__n_jobs = kwargs.get('n_jobs', 0)
         self._name = kwargs.get('name', None)
+        self.expected_kwargs = []
 
         # TODO add distributed support
         self.distributed = False
@@ -36,7 +22,7 @@ class Pipeline():
         for pipe in pipes:
             self.to(pipe)
 
-    def __call__(self, input, validate=False):
+    def __call__(self, input, validate=False, **kwargs):
         """
         Specify `validate=True` to first
         check the pipeline with a random sample from the input
@@ -47,7 +33,7 @@ class Pipeline():
 
         for pipe in self.pipes:
             try:
-                output = pipe(input)
+                output = pipe(input, **kwargs)
             except:
                 logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(pipe,
                                                                                     pipe.sig,
@@ -100,6 +86,9 @@ class Pipeline():
     # Pipeline composition methods
     def to(self, func, *args, **kwargs):
         assert((not isinstance(func, type)) and (callable(func)))
+
+        self.expected_kwargs += kwargs.get('kwargs', [])
+
         if not isinstance(func, p._pipe) \
                 and not isinstance(func, p._branches):
             self.pipes.append(p._pipe(0, func, *args, **kwargs))
@@ -108,10 +97,10 @@ class Pipeline():
         return self
 
     def map(self, func, *args, **kwargs):
-        return self.to(p._map(self.n_jobs, func, *args, **kwargs))
+        return self.to(p._map(self.n_jobs, func, *args, **kwargs), **kwargs)
 
     def map_dict(self, func, *args, **kwargs):
-        return self.to(p._map_dict(self.n_jobs, func, *args, **kwargs))
+        return self.to(p._map_dict(self.n_jobs, func, *args, **kwargs), **kwargs)
 
     def fork(self, *funcs):
         return self.to(p._fork(self.n_jobs, funcs))

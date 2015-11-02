@@ -1,7 +1,7 @@
 import unittest
 from functools import partial
-from atoll import Pipeline, pipes
-from atoll.pipeline import get_example
+from atoll import Pipeline
+from atoll.friendly import get_example, _get_name
 
 def add(x, y):
     return x + y
@@ -13,12 +13,12 @@ class Adder():
 
 class FriendlyTests(unittest.TestCase):
     def test_get_name(self):
-        self.assertEqual(pipes._get_name(add), 'add')
-        self.assertEqual(pipes._get_name(partial(add, 4)), 'add')
-        self.assertEqual(pipes._get_name(Adder), 'Adder')
+        self.assertEqual(_get_name(add), 'add')
+        self.assertEqual(_get_name(partial(add, 4)), 'add')
+        self.assertEqual(_get_name(Adder), 'Adder')
 
         f = lambda x,y: x+y
-        self.assertEqual(pipes._get_name(f), 'f = lambda x,y: x+y')
+        self.assertEqual(_get_name(f), 'f = lambda x,y: x+y')
 
     def test_pipeline_signature(self):
         p = Pipeline([add, Adder()])

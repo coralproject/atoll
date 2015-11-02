@@ -8,11 +8,11 @@ def lowercase(input):
     """
     return [s.lower() for s in input]
 
-def tokenize(input):
-    return [s.split(' ') for s in input]
+def tokenize(input, delimiter=' '):
+    return [s.split(delimiter) for s in input]
 
-def tokenize_single(input):
-    return input.split(' ')
+def tokenize_single(input, delimiter=' '):
+    return input.split(delimiter)
 
 def word_counter(input):
     return [len(s) for s in input]
@@ -102,3 +102,32 @@ class PipelineTests(unittest.TestCase):
     def test_validation(self):
         pipeline = Pipeline().map(tokenize_single)
         self.assertRaises(AttributeError, pipeline.validate, [[1,2,3],[4,5,6]])
+
+    def test_kwargs_missing(self):
+        pipeline = Pipeline().map(tokenize_single, kwargs=['delimiter'])
+        input = [doc.replace(' ', ',') for doc in self.docs]
+        self.assertRaises(KeyError, pipeline, input)
+
+    def test_kwargs(self):
+        expected = [
+            ['Coral', 'reefs', 'are', 'diverse', 'underwater', 'ecosystems'],
+            ['Coral', 'reefs', 'are', 'built', 'by', 'colonies', 'of', 'tiny', 'animals']
+        ]
+        pipeline = Pipeline().map(tokenize_single, kwargs=['delimiter'])
+        input = [doc.replace(' ', ',') for doc in self.docs]
+        output = pipeline(input, delimiter=',')
+        for o, e in zip(output, expected):
+            self.assertEqual(set(o), set(e))
+
+    def test_kwargs_nested(self):
+        expected = [
+            ['coral', 'reefs', 'are', 'diverse', 'underwater', 'ecosystems'],
+            ['coral', 'reefs', 'are', 'built', 'by', 'colonies', 'of', 'tiny', 'animals']
+        ]
+        token_pipeline = Pipeline().map(tokenize_single, kwargs=['delimiter'])
+        pipeline = Pipeline([token_pipeline]).map(lowercase)
+
+        input = [doc.replace(' ', ',') for doc in self.docs]
+        output = pipeline(input, delimiter=',')
+        for o, e in zip(output, expected):
+            self.assertEqual(set(o), set(e))
