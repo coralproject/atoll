@@ -58,7 +58,7 @@ class PipelineTests(unittest.TestCase):
             ('a', 2),
             ('b', 3)
         ]
-        pipeline = Pipeline().map_dict(count_per_key)
+        pipeline = Pipeline().mapValues(count_per_key)
         output = pipeline({
             'a': [0,0],
             'b': [0,0,0]

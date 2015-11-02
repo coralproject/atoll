@@ -1,9 +1,12 @@
 import random
 import logging
 from hashlib import md5
+from functools import partial
 from joblib import Parallel, delayed
 from atoll.pipes import Pipe, Branches
 from atoll.friendly import get_example
+from atoll.distrib import spark_context
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +25,27 @@ def composition(f):
     return decorated
 
 
-def execution(f):
-    def decorated(self, pipe, input, **kwargs):
+def prep_func(pipe, **kwargs):
+    """
+    Prepares a pipe's function or branches
+    by returning a partial function with its kwargs.
+    """
+    if isinstance(pipe, Branches):
+        return [prep_func(b) for b in pipe.branches]
+    else:
         kwargs_ = {}
         for key in pipe.expected_kwargs:
             try:
                 kwargs_[key] = kwargs[key]
             except KeyError:
                 raise KeyError('Missing expected keyword argument: {}'.format(key))
-        return f(self, pipe, input, **kwargs_)
+        return partial(pipe.func, **kwargs_)
+
+
+def execution(f):
+    def decorated(self, pipe, input, **kwargs):
+        func = prep_func(pipe, **kwargs)
+        return f(self, func, input)
     return decorated
 
 
@@ -41,6 +56,10 @@ class Pipeline(Pipe):
         self.pipes = []
 
     def func(self, input, **kwargs):
+        """
+        Used if the pipeline is nested in another.
+        This prevents nested pipelines from running their own parallel processes.
+        """
         return self(input, nested=True, **kwargs)
 
     def __call__(self, input, n_jobs=1, distributed=False, validate=False, nested=False, **kwargs):
@@ -49,30 +68,42 @@ class Pipeline(Pipe):
         check the pipeline with a random sample from the input
         before running on the entire input.
         """
-        #if distributed and not nested:
-            ## construct proper pipeline
-            #pass
-
         if validate and not nested:
             self.validate(input, n_jobs=n_jobs)
 
-        if nested:
-            self.parallel = self._serial
+        if distributed and not nested:
+            sc = spark_context(self.name)
+            n_jobs = None if n_jobs <= 0 else n_jobs
+            rdd = sc.parallelize(input, n_jobs)
+            print('BUILDING SPARK PIPELINE')
+            for op, pipe in self.pipes:
+                print('OPERATOR', op)
+                func = prep_func(pipe)
+                if op in ['fork', 'split']:
+                    # TODO branches need to be handled specially
+                    pass
+                else:
+                    rdd = getattr(rdd, op)(func)
+            return rdd.collect()
+
         else:
-            self.parallel = Parallel(n_jobs=n_jobs)
+            if nested:
+                self.parallel = self._serial
+            else:
+                self.parallel = Parallel(n_jobs=n_jobs)
 
-        for op, pipe in self.pipes:
-            try:
-                print('calling', pipe)
-                input = getattr(self, '_' + op)(pipe, input, **kwargs)
-            except:
-                logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(
-                    pipe,
-                    pipe.sig,
-                    get_example(input)))
-                raise
+            for op, pipe in self.pipes:
+                try:
+                    print('calling', pipe)
+                    input = getattr(self, '_' + op)(pipe, input, **kwargs)
+                except:
+                    logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(
+                        pipe,
+                        pipe.sig,
+                        get_example(input)))
+                    raise
 
-        del self.parallel
+            del self.parallel
         return input
 
     def __repr__(self):
@@ -114,7 +145,7 @@ class Pipeline(Pipe):
         return Pipe(func, *args, **kwargs)
 
     @composition
-    def map_dict(self, func, *args, **kwargs):
+    def mapValues(self, func, *args, **kwargs):
         return Pipe(func, *args, **kwargs)
 
     @composition
@@ -126,28 +157,32 @@ class Pipeline(Pipe):
         return Branches(funcs)
 
     @execution
-    def _to(self, pipe, input, **kwargs):
+    def _to(self, func, input):
         if not isinstance(input, tuple):
             input = (input,)
-        return pipe.func(*input, **kwargs)
+        return func(*input)
 
     @execution
-    def _map(self, pipe, input, **kwargs):
+    def _map(self, func, input):
         if not isinstance(input[0], tuple):
             input = [(i,) for i in input]
-        return self.parallel(delayed(pipe.func)(*i, **kwargs) for i in input)
+        return self.parallel(delayed(func)(*i) for i in input)
 
     @execution
-    def _map_dict(self, pipe, input, **kwargs):
-        return self.parallel(delayed(pipe.func)(*i, **kwargs) for i in input.items())
+    def _mapValues(self, func, input):
+        if isinstance(input, dict):
+            input = input.items()
+        # TODO should we handle dicts like this?
+        # or throw an error w/ a helpful message?
+        return self.parallel(delayed(func)(k, v) for k, v in input)
 
     @execution
-    def _fork(self, branches, input, **kwargs):
-        return tuple(self.parallel(delayed(b.func)(input, **kwargs) for b in branches))
+    def _fork(self, funcs, input):
+        return tuple(self.parallel(delayed(func)(input) for func in funcs))
 
     @execution
-    def _split(self, branches, input, **kwargs):
-        return tuple(self.parallel(delayed(b.func)(i, **kwargs) for b, i in zip(branches, input)))
+    def _split(self, funcs, input):
+        return tuple(self.parallel(delayed(func)(i) for func, i in zip(funcs, input)))
 
     def _serial(self, stream):
         return [func(*args, **kwargs) for func, args, kwargs in stream]
