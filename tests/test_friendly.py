@@ -29,8 +29,9 @@ class FriendlyTests(unittest.TestCase):
         self.assertEqual(str(p), 'to:add -> to:Adder')
 
     def test_pipeline_branching_repr(self):
-        p = Pipeline().to(add).fork(add, add)
-        self.assertEqual(str(p), 'to:add -> fork:add|add')
+        p = Pipeline().to(add).fork(Pipeline().to(add),
+                                    Pipeline().to(add))
+        self.assertEqual(str(p), 'to:add -> fork:to:add|to:add')
 
     def test_examples(self):
         input = [1,2,3,4]
