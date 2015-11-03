@@ -200,7 +200,7 @@ Pipes and branches can also be executed in a distributed fashion across a cluste
 
 Currently, only a Mesos cluster managed by Zookeeper is supported.
 
-`See here https://github.com/ftzeng/docker-mesos-pyspark-hdfs`_ for some Docker files to help you setup a cluster to work with (`see here http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker`_ for more details)).
+`See here <https://github.com/ftzeng/docker-mesos-pyspark-hdfs>`_ for some Docker files to help you setup a cluster to work with (`see here <http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker>`_ for more details)).
 
 You should also create a config file at ``/etc/atoll/conf/distrib.yaml`` which specifies:
     - ``spark_binary``: Where to fetch a Spark binary archive
