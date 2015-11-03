@@ -3,38 +3,40 @@ Tutorial
 
 Let's try defining some of our own pipes and a pipeline.
 
-In this example, we will create a pipeline for computing a "discussion score" for a comments section.
+In this example, we will create a pipeline for computing "discussion scores" for comments sections.
 
 We will be using pre-generated data available here:
 
 https://github.com/CoralProject/atoll/raw/master/examples/threads.json
 
-This is a JSON dump representing a fake comments section.
+This is a JSON dump representing a fake comments sections for a few articles.
 
 The data looks something like this:
 
 .. code-block:: json
 
     [
-        {
-            "body": "ifhmyuhoru lktlglydmq...",
-            "user": "nbczfjtvxe",
-            "replies": [
-                {
-                    "body": "bqzwssfthc liekxllsnd...",
-                    "user": "vtkgnkuhmp",
-                    "replies": []
-                },
-                {
-                    "body": "tkxlcltvbe mdwyilohof...",
-                    "user": "xnhtqgxzvx",
-                    "replies": []
-                }
-            ]
-        },
+        [
+            {
+                "body": "ifhmyuhoru lktlglydmq...",
+                "user": "nbczfjtvxe",
+                "replies": [
+                    {
+                        "body": "bqzwssfthc liekxllsnd...",
+                        "user": "vtkgnkuhmp",
+                        "replies": []
+                    },
+                    {
+                        "body": "tkxlcltvbe mdwyilohof...",
+                        "user": "xnhtqgxzvx",
+                        "replies": []
+                    }
+                ]
+            },
+            ...
+        ],
         ...
     ]
-
 
 The complete example is available at:
 
@@ -63,65 +65,27 @@ Our discussion score will be based just on the thread length and the number of p
 
 Now we want to take that raw JSON data and transform them into instances of this ``Thread`` class.
 
-We can write a pipe to do that.
-
-First, we need to import the ``Pipe`` class:
+We can write a function to do that:
 
 .. code-block:: python
 
-    from atoll import Pipe
+    def make_thread(article):
+        return [Thread(*count_thread(t)) for t in article]
 
-When defining a new pipe, the first considerations are:
-
-- What input type will this pipe accept?
-- What type will this pipe output?
-
-In our case, we are only concerned with thread length and number of participants, so the only information in our raw data that we care about are the ``replies`` and the ``user`` keys. So as input, we want a list of dictionaries with those keys.
-
-The ``user`` key will just be a string, but the ``replies`` key will be recursive, in that it can contain more of these dictionaries. Atoll uses the special type ``t.self`` to indicate a recursive type.
-
-Because we are building the pipe to transform our raw data into ``Thread`` objects, we know we need to output a list of them.
-
-Thus we can define our pipe like so:
-
-.. code-block:: python
-
-    from atoll import t
-
-    class ThreadsTransform(Pipe):
-        input = [{
-            'user': str,
-            'replies': [t.self]
-        }]
-        output = [Thread]
-
-Now the last step in defining a pipe is defining what it does. We implement the ``__call__`` method to do so:
-
-.. code-block:: python
-
-    class ThreadsTransform(Pipe):
-        input = [{
-            'user': str,
-            'replies': ['self']
-        }]
-        output = [Thread]
-
-        def __call__(self, input):
-            return [Thread(*self.count_thread(c)) for c in input]
-
-        def count_thread(self, comment, seen_users=None):
-            thread_length = 1
-            unique_users = 0
-            if seen_users is None:
-                seen_users = []
-            if comment['user'] not in seen_users:
-                unique_users += 1
-                seen_users.append(comment['user'])
-            for r in comment['replies']:
-                l, n = self.count_thread(r, seen_users)
-                thread_length += l
-                unique_users += n
-            return thread_length, unique_users
+    def count_thread(comment, seen_users=None):
+        """Counts the length of a thread and its unique users"""
+        thread_length = 1
+        unique_users = 0
+        if seen_users is None:
+            seen_users = []
+        if comment['user'] not in seen_users:
+            unique_users += 1
+            seen_users.append(comment['user'])
+        for r in comment['replies']:
+            l, n = self.count_thread(r, seen_users)
+            thread_length += l
+            unique_users += n
+        return thread_length, unique_users
 
 There's a lot going on here, but basically this counts up the unique users and comments in a thread.
 
@@ -135,13 +99,13 @@ Now we can load our data, define a new pipeline, and see if the transformation w
     with open('threads.json', 'r') as f:
         raw_data = json.load(f)
 
-    pipeline = Pipeline([ThreadsTransform()])
+    pipeline = Pipeline().map(make_threads)
     threads = pipeline(raw_data)
     print(threads)
 
 You should see output like::
 
-    [Thread(len=2,users=2), Thread(len=3,users=3), ...
+    [[Thread(len=2,users=2), Thread(len=3,users=3), ...
 
 
 Computing the discussion score
@@ -151,26 +115,23 @@ Now we can start defining the pipes that will compute our discussion score.
 
 Our discussion score will be a combination of a length score, based on the thread's length, and a diveristy score, based on the number of unique participants in the thread.
 
-The diversity score is a bit simpler, so let's start with that.
-
-The diversity score pipe takes in a list of our ``Thread`` objects and gives us a float (it computes a diversity score for the entire comments section rather than for each individual thread):
+For the length score, we will just compute the mean thread length for an article:
 
 .. code-block:: python
 
-    class DiversityScore(Pipe):
-        input = [Thread]
-        output = float
+    def length_score(threads):
+        """Computes a thread length score for a comments section"""
+        # on avg, how long is a thread
+        return sum(t.length for t in threads)/len(threads)
 
-The diversity score will just be computed as the mean number of participants across threads:
+We can define the diversity score in a similar manner; we compute the mean of the mean participant length per thread for an article:
 
 .. code-block:: python
 
-    class DiversityScore(Pipe):
-        input = [Thread]
-        output = float
-
-        def __call__(self, threads):
-            return sum(t.participants/t.length for t in threads)/len(threads)
+    def diversity_score(threads):
+        """Computes a discussion score for a comments section"""
+        # on avg, how many people are in a thread
+        return sum(t.participants/t.length for t in threads)/len(threads)
 
 Note that division works differently in Python 2; if you are using Python 2, add this to the top of your script:
 
@@ -178,97 +139,41 @@ Note that division works differently in Python 2; if you are using Python 2, add
 
     from __future__ import division
 
-We can define the length score pipe in a similar manner. It takes the same input and gives the same output as the diversity score pipe:
-
-.. code-block:: python
-
-    class LengthScore(Pipe):
-        input = [Thread]
-        output = float
-
-The length score is computed in a more complex way, beyond the scope of this tutorial, but basically it gives higher scores for comments sections that have consistently long threads:
-
-.. code-block:: python
-
-    import numpy as np
-
-    class LengthScore(Pipe):
-        input = [Thread]
-        output = float
-
-        def __call__(self, threads):
-            X = np.array([t.length for t in threads])
-            n = len(X)
-            return ((n/(n + self.beta)) * (np.sum(X)/n)) + \
-                (self.beta/(n+self.beta) * (self.alpha/self.beta))
-
-Note that the ``__call__`` method refers to two class attributes, ``self.alpha`` and ``self.beta``, which we have not yet defined. These are parameters that can be tweaked, so we want them to be defined when the pipe is created.
-
-We can do this by defining the class's ``__init__`` method like any Python class:
-
-.. code-block:: python
-
-    class LengthScore(Pipe):
-        input = [Thread]
-        output = float
-
-        def __init__(self, alpha=1, beta=2):
-            self.alpha = alpha
-            self.beta = beta
-
-        # rest of the class
-
 Let's try building a pipeline with these new pipes and check that it works:
 
 .. code-block:: python
 
-    pipeline = Pipeline([
-        ThreadsTransform(),
-        (LengthScore(alpha=1, beta=2), DiversityScore())
-    ])
+    # define the nested pipelines
+    length_p = Pipeline().map(length_score)
+    diversity_p = Pipeline().map(diversity_score)
+
+    # then the complete pipeline
+    pipeline = Pipeline().map(make_threads).fork(length_p, diversity_p)
     outputs = pipeline(raw_data)
     print(outputs)
 
-Note that we are using Atoll's branching syntax to send the output of the ``ThreadsTransform`` pipe to both the ``LengthScore`` and ``DiversityScore`` pipes.
-
 You should get output that looks like::
 
-    (4.3137254901960782, 0.93327945665445655)
+    ([3.89, 4.01, 5.14, 4.27, 3.49, 4.06, 4.0, 4.5, 4.72, 3.9], [0.9334127792142499, 0.9366252358752358, 0.9229765858378006, 0.934963918090853, 0.9422580932139755, 0.9435349533507429, 0.943411459363527, 0.9312625049118184, 0.9237472061686964, 0.9350028305028306])
 
-We are left with two scores, but we want to combine them to a single score. We can define one last pipe to do so.
+We are left with two scores, but we want to combine them to a single score. We can define one last pipe - a reduce pipe - to do so.
 
-Let's say we want to weight the length score by the root of the diversity score, that is:
-
-.. math::
-
-    \text{discussion_score} = \text{length_score} \sqrt{\text{diversity_score}}
-
-This new pipe will take in two inputs, the float scores from the ``LengthScore`` and ``DiversityScore`` pipes, and combine them into a single float output:
+We'll keep things simple and say that ``discussion_score = length_score * diversity_score``.
 
 .. code-block:: python
 
-    import math
-
-    class RootWeight(Pipe):
-        input = (float, float)
-        output = float
-
-        def __call__(self, weight, value):
-            return math.sqrt(weight) * value
+    def discussion_score(length_scores, diversity_scores):
+        return [l*d for l, d in zip(length_scores, diversity_scores)]
 
 Then we can combine everything into our final Pipeline:
 
 .. code-block:: python
 
-    pipeline = Pipeline([
-        ThreadsTransform(),
-        (LengthScore(alpha=1, beta=2), DiversityScore()),
-        RootWeight()
-    ])
-    discussion_score = pipeline(raw_data)
-    print(discussion_score)
+    pipeline = Pipeline().map(make_threads).fork(length_p, diversity_p).reduce(discussion_score)
+    discussion_scores = pipeline(raw_data)
+    print(discussion_scores)
 
 With final output that's something like::
 
-    1.93837570837
+    [3.6309757111434324, 3.7558671958596954, 4.7440996512062945, 3.9922959302479417, 3.2884807453167744, 3.8307519106040155, 3.773645837454108, 4.190681272103182, 4.360086813116247, 3.646511038961039]
 

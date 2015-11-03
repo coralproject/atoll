@@ -1,3 +1,7 @@
+"""
+Loads the service configuration.
+"""
+
 import os
 import yaml
 

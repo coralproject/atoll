@@ -4,90 +4,39 @@ Pipelines
 Defining pipes
 --------------
 
-Custom pipes are defined like so:
+Pipes are just defined as (pickleable) functions:
 
 .. code-block:: python
 
-    from atoll import Pipe
+    def count_length(input):
+        return len(input)
 
-    class CharacterCountPipe(Pipe):
-        input = [str]
-        output = [int]
-
-        # where the magic happens
-        def __call__(self, input):
-            return [len(s) for s in input]
-
-The ``input`` and ``output`` attributes are required. These define the pipe's input and output type signatures, which are needed for validating pipelines when they are defined. They are also used to automatically document what the pipe accepts and returns.
-
-Pipe type signatures
-~~~~~~~~~~~~~~~~~~~~
-
-The type signatures are composed of regular Python types, with one main restriction. Lists and sets must be homogenous, so they can be defined with only one element type (note that a tuple can be heterogenous and acts as a "type" on its own).
-
-For example, the following type signatures are valid:
-
-.. code-block:: python
-
-    input = [str]
-    input = set(str)
-    input = [(bool, int)]
-
-And the following are invalid:
-
-.. code-block:: python
-
-    input = [str, int]
-    input = [(str, str), (str, int)]
-
-Lists, however, can be arbitrarily nested, assuming that the nested lists are homogenous in the same way.
-
-For example, ``[str]`` encapsulates ``['a', 'b', 'c']`` as well as ``['a', ['b', 'c']]`` (this may need revisiting).
-
-These type signatures are capable of handling custom classes, all the primitive Python types, as well as dictionaries.
-
-There is some support for recursive types, i.e::
-
-    {
-        'replies': [{
-            'replies': [{
-                # etc
-            }]
-        }]
-    }
-
-The above can be represented as::
-
-    from atoll import t
-    {
-        'replies': [t.self]
-    }
-
+"Pickleable" currently means they must be functions defined at the top-level of a module. No lambda support yet.
 
 Defining pipelines
 ------------------
 
-Pipelines are defined just by creating an instance of the ``Pipeline`` class with a list of ``Pipe`` instances:
+Pipelines are defined just by creating an instance of the ``Pipeline`` class and then using pipeline operators to attach functions:
 
 .. code-block:: python
 
-    from atoll import Pipe, Pipeline
+    from atoll import Pipeline
 
-    class TokenizerPipe(Pipe):
-        input = [str]
-        output = [[str]]
+    def tokenize(input, delimiter=' '):
+        return input.split(delimiter)
 
-        def __call__(self, input):
-            return [s.split(' ') for s in input]
+    pipeline = Pipeline().map(tokenize).map(count_length)
 
-    class WordCountPipe(Pipe):
-        input = [[str]]
-        output = [int]
+Pipelines are intended for working on collections, so most of the operators have that in mind:
 
-        def __call__(self, input):
-            return [len(s) for s in input]
+- ``map``
+- ``mapValues``
+- ``flatMap``
+- ``flatMapValues``
+- ``reduce``
+- ``reduceByKey``
 
-    pipeline = Pipeline([TokenizerPipe(), WordCountPipe()])
+There is additionally the ``to`` operator which passes all of the input to the specified function, rather than applying it individually over the collection. This is useful for chaining pipelines together (see "Nested pipelines" below).
 
 They are called just by calling the pipeline with your input data:
 
@@ -108,14 +57,10 @@ Pipelines may also be nested in each other:
 
 .. code-block:: python
 
-    class LowercasePipe(Pipe):
-        input = [str]
-        output = [str]
+    def lowercase(input):
+        return input.lower()
 
-        def __call__(self, input):
-            return [s.lower() for s in input]
-
-    nested_pipeline = Pipeline([LowercasePipe(), pipeline])
+    nested_pipeline = Pipeline().map(lowercase).to(pipeline)
     nested_pipeline(data)
     # >>> [6,9]
 
@@ -123,80 +68,59 @@ Pipelines may also be nested in each other:
 Branching pipelines
 -------------------
 
-Pipelines can be branched and then reduced back into a single pipeline:
+Pipelines can be branched out to other nested pipelines.
+
+For example, say you have a common data processing pipeline needed for a few other tasks.
+
+You can define the common pipeline first:
 
 .. code-block:: python
 
-    class VowelEndingCountPipe(Pipe):
-        input = [[str]]
-        output = [int]
-        vowels = ['a', 'e', 'i', 'o', 'u', 'y']
+    common = Pipeline().map(lowercase).map(tokenize)
 
-        def __call__(self, input):
-            return [sum(1 if w[-1] in self.vowels else 0 for w in s) for s in input]
-
-    class PercentVowelEndingPipe(Pipe):
-        input = ([int], [int])
-        output = [float]
-
-        def __call__(self, vowel_counts, word_counts):
-            return [v/w for v, w in zip(vowel_counts, word_counts)]
-
-    branching_pipeline = Pipeline([
-            LowercasePipe(),
-            TokenizerPipe(),
-            (VowelEndingCountPipe(), WordCountPipe()),
-            PercentVowelEndingPipe()
-    ])
-
-    branching_pipeline(data)
-    # >>> [0.333, 0.333]
-
-Branches in a pipelines can be executed in parallel as well by specifying a non-zero value for ``n_jobs`` when creating the pipeline:
+Then define pipelines for the other tasks:
 
 .. code-block:: python
 
-    branching_pipeline = Pipeline([
-            LowercasePipe(),
-            TokenizerPipe(),
-            (VowelEndingCountPipe(), WordCountPipe()),
-            PercentVowelEndingPipe()
-    ], n_jobs=2)
+    def count_coral(input):
+        return input.count('coral')
+
+    task_a = Pipeline().map(count_length)
+    task_b = Pipeline().flatMap(count_vowels)
+
+    branching_pipeline = common.fork(task_a, task_b)
+
+    results_a, results_b = branching_pipeline(data)
+    # >>> [6,9], [1,1]
+
+The ``fork`` method duplicates inputs across the specified pipelines while avoiding redundant computation. For instance, in the example above, the ``common`` pipeline is executed only once.
+
+Note that you can only branch to other pipelines.
+
+We can also ``reduce`` the results of branching pipelines if we want:
+
+.. code-block:: python
+
+    from operator import add
+    reduced_pipeline = branching_pipeline.reduce(add)
+    results = reduced_pipeline(data)
+    # >>> [6,9,1,1]
 
 
 Identity pipes
 --------------
 
-When branching, sometimes you want to pass some data unmodified to a pipe after the branching. Identity pipes allow you to do that.
+Occasionally you may want to pass on data without modifying it.
 
-An identity pipe is declared by using the ``None`` keyword in a branching segment, e.g.:
+For instance, you may want to fork a pipeline but return the output from the pipe preceding the fork as well, e.g.
 
 .. code-block:: python
 
-    class CharCountPipe(Pipe):
-        input = [[str]]
-        output = [[int]]
+    branching_pipeline = common.fork(task_a, task_b, None)
+    result_a, result_b, result_c = branching_pipeline(data)
+    # >>> [6, 9], [1, 1], [['coral', 'reefs', 'are', 'diverse', 'underwater', 'ecosystems'], ['coral', 'reefs', 'are', 'built', 'by', 'colonies', 'of', 'tiny', 'animals']]
 
-        def __call__(self, input):
-            return [[len(w) for w in s] for s in input]
-
-    class CharCountWithWordPipe(Pipe):
-        input = ([[int]], [[str]])
-        output = [[(int, str)]]
-
-        def __call__(self, charcounts, wordlists):
-            return [list(zip(counts, words)) for counts, words in zip(charcounts, wordlists)]
-
-    branching_pipeline = Pipeline([
-            LowercasePipe(),
-            TokenizerPipe(),
-            (CharCountPipe(), None), # The output of TokenizerPipe will also be passed to CharCountWithWordPipe
-            CharCountWithWordPipe()
-    ])
-
-    branching_pipeline(data)
-    # >>> [[(5, 'coral'), (5, 'reefs'), (3, 'are'), (7, 'diverse'), (10, 'underwater'), (10, 'ecosystems')],
-    #      [(5, 'coral'), (5, 'reefs'), (3, 'are'), (5, 'built'), (2, 'by'), (8, 'colonies'), (2, 'of'), (4, 'tiny'), (7, 'animals')]]
+Specifying a pipe as ``None`` inserts an "identity" pipe which does just that - it just returns the input.
 
 
 Naming pipelines
@@ -206,9 +130,100 @@ It's a best practice to name your pipelines something descriptive so you know wh
 
 .. code-block:: python
 
-    pipeline = Pipeline([
-            LowercasePipe(),
-            TokenizerPipe(),
-            (VowelEndingCountPipe(), WordCountPipe()),
-            PercentVowelEndingPipe()
-    ], name='Percent vowel endings pipeline')
+    pipeline = Pipeline(name='Tokenizer').map(lowercase).map(tokenize)
+
+
+Runtime keyword arguments
+-------------------------
+
+Sometimes you may want to define a pipeline but want to be able to supply keyword arguments which vary the function of some of its pipes.
+
+For instance, you might have a couple datasets from different sources that have similar information.
+
+You could define a pipeline for each that can properly handle each dataset's format, or you can define a single pipeline that varies depending on how it's called, like so:
+
+.. code-block:: python
+
+    from operator import add
+
+    data_a = [1, 2, 3, 4]
+    data_b = ['1', '2', '3', '4']
+
+    def identity(x): return x
+
+    def standardize(input, transform_func=identity):
+        return transform_func(input)
+
+    # This tells the pipeline to expect a kwarg called 'transform_func'
+    pipeline = Pipeline().map(standardize, kwargs=['transform_func']).reduce(add)
+
+    # Now that we're calling the pipe, specify the kwarg
+    results_a = pipeline(data_a, transform_func=identity)
+    # >>> 10
+
+    # Now that we're calling the pipe, specify the kwarg
+    results_b = pipeline(data_b, transform_func=int)
+    # >>> 10
+
+
+Pipeline validation
+-------------------
+
+If you are about to process a lot of data, you don't want runtime errors occuring deep in your pipeline.
+
+To help mitigate this, you can "validate" a pipeline by either passing in your data to the pipeline's ``validate`` method:
+
+.. code-block:: python
+
+    pipeline.validate(data)
+
+Or by running your pipeline with ``validate=True``:
+
+.. code-block:: python
+
+    pipeline(data, validate=True)
+
+This will draw a random sample from your dataset and try running the pipeline.
+
+
+Parallelization and distributed computing
+-----------------------------------------
+
+Pipes and branches in a pipelines can be executed in parallel (using multiprocessing) by specifying a non-zero value for ``n_jobs`` when running the pipeline:
+
+.. code-block:: python
+
+    results_a, results_b = branching_pipeline(data, n_jobs=2)
+    # >>> [6,9], [1,1]
+
+Pipes and branches can also be executed in a distributed fashion across a cluster by using (Py)Spark.
+
+Currently, only a Mesos cluster managed by Zookeeper is supported.
+
+`See here <https://github.com/ftzeng/docker-mesos-pyspark-hdfs>`_ for some Docker files to help you setup a cluster to work with (`see here <http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker>`_ for more details)).
+
+You should also create a config file at ``/etc/atoll/conf/distrib.yaml`` which specifies:
+    - ``spark_binary``: Where to fetch a Spark binary archive
+    - ``zookeeper_host``: The ``ip:port`` of your Zookeeper host
+
+For example:
+
+.. code-block:: yaml
+
+    spark_binary: http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz
+    zookeeper_host: 172.17.0.1:2181
+
+Note that if you are using Docker for your cluster, you may need to export the following env variables before running your pipeline:
+
+.. code-block:: bash
+
+    export LIBPROCESS_IP=$(ifconfig docker0 | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}')
+    export PYSPARK_PYTHON=/usr/bin/python3
+
+Then, to run a pipeline on the cluster, just pass ``distributed=True`` when calling the pipeline, e.g:
+
+.. code-block:: python
+
+    pipeline = Pipeline().map(lowercase).map(tokenize)
+    results = pipeline(data, distributed=True)
+

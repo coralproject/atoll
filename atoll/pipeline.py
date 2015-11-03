@@ -1,186 +1,144 @@
-import six
+import random
 import logging
 from hashlib import md5
+from itertools import chain
+from functools import partial
 from joblib import Parallel, delayed
-from atoll.validate import build_tree, TypeNode
+from atoll.pipes import Pipe, Branches
+from atoll.friendly import get_example
+from atoll.distrib import spark_context, is_rdd
+
 
 logger = logging.getLogger(__name__)
 
 
-class InvalidPipelineError(Exception):
-    pass
+def composition(f):
+    def decorated(self, func, *args, **kwargs):
+        assert ((not isinstance(func, type)) and callable(func)) or func is None, 'Pipes must be callable'
 
-
-class MetaPipe(type):
-    """
-    A metaclass which automatically building of a
-    pipe's input and output type trees.
-
-    Also automatically adds these input and output type trees
-    as part of the class's docstring.
-    """
-    def __init__(cls, name, parents, dct):
-        cls._input = build_tree(cls.input)
-        cls._output = build_tree(cls.output)
-
-    @property
-    def __doc__(self):
-        doc = super(MetaPipe, self).__doc__ or ''
-        return '\n'.join([doc.strip(),
-                          '\nInput:', str(self._input),
-                          '\nOutput:', str(self._output)])
-
-class BranchedPipe():
-    """
-    A special type of pipe for representing branched pipes
-    """
-    def __init__(self, pipes, n_jobs):
-        # Check for any identity pipes
-        pipes = [p if p != None else IdentityPipe() for p in pipes]
-
-        self._input = TypeNode(tuple, ch=[p._input for p in pipes])
-        self._output = TypeNode(tuple, ch=[p._output for p in pipes])
-        self.n_jobs = n_jobs
-
-        self.name = '({})'.format(', '.join([p.name for p in pipes]))
-        self.sig = '({})'.format(', '.join([p.sig for p in pipes]))
-        self.pipes = pipes
-
-    def __call__(self, *input):
-        # One-to-branch, duplicate input for each pipe
-        if len(input) == 1:
-            input = tuple(input for p in self.pipes)
-
-        # otherwise, multi-to-branch/branch-to-branch
+        if isinstance(func, Pipeline):
+            pipe = func
         else:
-            input = tuple((i,) for i in input)
+            pipe = f(self, func, *args, **kwargs)
+        self.expected_kwargs += pipe.expected_kwargs
+        self.pipes.append((f.__name__, pipe))
+        return self
+    return decorated
 
-        stream = zip(self.pipes, input)
-        if self.n_jobs != 0:
-            return tuple(Parallel(n_jobs=self.n_jobs)(delayed(p)(*i) for p, i in stream))
+
+def branching(f):
+    def decorated(self, *funcs):
+        for func in funcs:
+            assert func is None or isinstance(func, Pipeline), 'Fork branches must be pipelines'
+        branches = f(self, funcs)
+        self.expected_kwargs += branches.expected_kwargs
+        self.pipes.append((f.__name__, branches))
+        return self
+    return decorated
+
+
+def prep_func(pipe, **kwargs):
+    """
+    Prepares a pipe's function or branches
+    by returning a partial function with its kwargs.
+    """
+    if isinstance(pipe, Branches):
+        return [prep_func(b) for b in pipe.branches]
+    else:
+        kwargs_ = {}
+        for key in pipe.expected_kwargs:
+            try:
+                kwargs_[key] = kwargs[key]
+            except KeyError:
+                raise KeyError('Missing expected keyword argument: {}'.format(key))
+        return partial(pipe.func, **kwargs_)
+
+def kv_func(f, k, v):
+    return k, f(v)
+
+def execution(f):
+    def decorated(self, pipe, input, **kwargs):
+        func = prep_func(pipe, **kwargs)
+        return f(self, func, input)
+    return decorated
+
+
+class Pipeline(Pipe):
+    def __init__(self, **kwargs):
+        self._name = kwargs.get('name', None)
+        self.expected_kwargs = []
+        self.pipes = []
+
+    def func(self, input, distributed=False, **kwargs):
+        """
+        Used if the pipeline is nested in another.
+        This prevents nested pipelines from running their own parallel processes.
+        """
+        return self(input, distributed=distributed, nested=True, **kwargs)
+
+    def __call__(self, input, n_jobs=1, distributed=False, validate=False, nested=False, **kwargs):
+        """
+        Specify `validate=True` to first
+        check the pipeline with a random sample from the input
+        before running on the entire input.
+        """
+        if validate and not nested:
+            self.validate(input, n_jobs=n_jobs)
+
+        if distributed:
+            rdd = input
+            if not is_rdd(input):
+                sc = spark_context(self.name)
+                n_jobs = None if n_jobs <= 0 else n_jobs
+                rdd = sc.parallelize(input, n_jobs)
+            for op, pipe in self.pipes:
+                func = prep_func(pipe, **kwargs)
+                if op == 'fork':
+                    # cache the current RDD
+                    rdd.cache()
+
+                    # bleh, build out each branch as an RDD,
+                    # then we have to (afaik) collect their results
+                    # then build a new rdd out of that
+                    rdds = [branch(rdd, distributed=True) for branch in func]
+                    rdd = sc.parallelize([r.collect() if is_rdd(r) else r for r in rdds], n_jobs)
+                elif op == 'to':
+                    # the `to` operation requires the resulting dataset
+                    # so we have to collect the results (if necessary)
+                    # we don't create the new RDD, we'll let the next
+                    # iteration do so if necessary
+                    rdd = self._to(pipe, rdd.collect() if is_rdd(rdd) else rdd, **kwargs)
+                else:
+                    rdd = getattr(rdd, op)(func)
+            return rdd.collect() if is_rdd(rdd) else rdd
+
         else:
-            return tuple(p(*i) for p, i in stream)
+            if nested:
+                self.parallel = self._serial
+            else:
+                self.parallel = Parallel(n_jobs=n_jobs)
 
-    def __repr__(self):
-        return self.sig
+            for op, pipe in self.pipes:
+                try:
+                    input = getattr(self, '_' + op)(pipe, input, **kwargs)
+                except:
+                    logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(
+                        pipe,
+                        pipe.sig,
+                        get_example(input)))
+                    raise
 
-
-class IdentityPipe():
-    """
-    The identity pipe is a special pipe which passes along its input unmodified.
-    It is used only in branching.
-    """
-    name = 'IdentityPipe'
-    sig = 'IdentityPipe'
-
-    def __init__(self):
-        # These are established during validation
-        self._input = None
-        self._output = None
-
-    def __call__(self, input):
+            del self.parallel
         return input
 
-
-@six.add_metaclass(MetaPipe)
-class Pipe():
-    input = [str]
-    output = [str]
-
-    def __new__(cls, *args, **kwargs):
-        obj = super(Pipe, cls).__new__(cls)
-        obj._args = args
-        obj._kwargs = kwargs
-
-        # Build Pipe's signature
-        args = ', '.join([ags for ags in [
-                            ', '.join(map(str, args)),
-                            ', '.join(['{}={}'.format(k, v) for k, v in kwargs.items()])
-                        ] if ags])
-        obj.sig = '{}({})'.format(
-            cls.__name__,
-            args
-        )
-
-        obj.name = type(obj).__name__
-
-        return obj
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
     def __repr__(self):
-        return self.sig
+        return ' -> '.join(['{}:{}'.format(op, pipe) for op, pipe in self.pipes])
 
-    def __call__(self):
-        raise NotImplementedError
-
-    def __doc__(self):
-        return super(Pipe, self).__doc__()
-
-
-class Pipeline():
-    def __init__(self, pipes, **kwargs):
-        self.pipes = []
-        self.n_jobs = kwargs.get('n_jobs', 0)
-
-        # Process branches as necessary
-        for p in pipes:
-            if isinstance(p, tuple):
-                self.pipes.append(BranchedPipe(p, self.n_jobs))
-            else:
-                self.pipes.append(p)
-
-        # Validate the pipeline
-        for p_out, p_in in zip(self.pipes, self.pipes[1:]):
-            output = p_out._output
-            input = p_in._input
-
-            if isinstance(p_in, BranchedPipe):
-                # If the output is not a tuple,
-                # we are replicating it across each branch (one-to-branch)
-                if output.type != tuple:
-                    output = TypeNode(tuple, ch=[output for i in input.children])
-
-                # Check for identity pipes
-                for i, ch in enumerate(input.children):
-                    if ch is None:
-                        # The identity pipe's input and output
-                        # depend on the pipe that feeds into it,
-                        # so update its input and output here
-                        input.children[i] = output.children[i]
-                        p_in._output.children[i] = output.children[i]
-
-            if not input.accepts(output):
-                msg = 'Incompatible pipes:\npipe {} outputs {},\npipe {} requires input of {}.'.format(p_out.name, output, p_in.name, input)
-                logger.error(msg)
-                raise InvalidPipelineError(msg)
-
-        # Pipelines can be nested
-        self._input = self.pipes[0]._input
-        self._output = self.pipes[-1]._output
-
+    @property
+    def name(self):
         # Ideally users should name their own pipelines
         # so they know what a pipeline does, but a fallback is offered
-        self.name = kwargs.get('name', self.sig)
-
-    def __call__(self, input):
-        for pipe in self.pipes:
-            try:
-                if isinstance(input, tuple):
-                    output = pipe(*input)
-                else:
-                    output = pipe(input)
-            except:
-                logger.exception('Failed to execute pipe {}'.format(pipe))
-                raise
-            input = output
-        return output
-
-    def __repr__(self):
-        return ' -> '.join([str(p) for p in self.pipes])
+        return self._name if self._name is not None else self.sig
 
     @property
     def sig(self):
@@ -189,4 +147,113 @@ class Pipeline():
         This is for establishing data analysis provenance,
         but note that it does not (yet) account for stochastic pipes!
         """
-        return md5('->'.join([p.sig for p in self.pipes]).encode('utf-8')).hexdigest()
+        return md5('->'.join(['{}:{}'.format(op, pipe) for op, pipe in self.pipes]).encode('utf-8')).hexdigest()
+
+    def validate(self, data, n_jobs=1, n=1):
+        """
+        Approximately validate the pipeline
+        using a "canary" method, i.e. compute on
+        a random sample and see if it doesn't break.
+
+        Does not guarantee that the pipeline will run
+        without error, but a good approximation.
+        """
+        sample = random.sample(data, n)
+        self(sample, n_jobs=n_jobs, validate=False)
+
+    @composition
+    def to(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def map(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def flatMap(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def mapValues(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def flatMapValues(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def reduce(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def reduceByKey(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @branching
+    def fork(self, funcs):
+        return Branches(funcs)
+
+    @execution
+    def _to(self, func, input):
+        if not isinstance(input, tuple):
+            input = (input,)
+        return func(*input)
+
+    @execution
+    def _map(self, func, input):
+        if not isinstance(input[0], tuple):
+            input = [(i,) for i in input]
+        return self.parallel(delayed(func)(*i) for i in input)
+
+    @execution
+    def _flatMap(self, func, input):
+        if not isinstance(input[0], tuple):
+            input = [(i,) for i in input]
+        return [result for result in chain(*self.parallel(delayed(func)(*i) for i in input))]
+
+    @execution
+    def _mapValues(self, func, input):
+        if isinstance(input, dict):
+            input = input.items()
+        # TODO should we handle dicts like this?
+        # or throw an error w/ a helpful message?
+        func = partial(kv_func, func)
+        return self.parallel(delayed(func)(k, v) for k, v in input)
+
+    @execution
+    def _flatMapValues(self, func, input):
+        if isinstance(input, dict):
+            input = input.items()
+        func = partial(kv_func, func)
+
+        # perhaps this can be improved
+        return [result for result in
+                chain(*[[(k, v) for v in vs] for k, vs in
+                        self.parallel(delayed(func)(*i) for i in input)])]
+
+    @execution
+    def _reduce(self, func, input):
+        output = input[0]
+        for i in input[1:]:
+            output = func(output, i)
+        return output
+
+    @execution
+    def _reduceByKey(self, func, input):
+        if isinstance(input, dict):
+            input = input.items()
+
+        results = {}
+        for k, v in input:
+            try:
+                results[k] = func(results[k], v)
+            except KeyError:
+                results[k] = v
+        return list(results.items())
+
+    @execution
+    def _fork(self, funcs, input):
+        return tuple(self.parallel(delayed(func)(input) for func in funcs))
+
+    def _serial(self, stream):
+        return [func(*args, **kwargs) for func, args, kwargs in stream]
