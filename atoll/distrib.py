@@ -11,7 +11,7 @@ DISTRIB_CONF = {
     # this must be a _prebuilt_ spark archive, i.e. a spark binary package
     # you can build it and host it yourself if you like.
     'spark_binary': 'http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz',
-    'zookeeper_host': '172.17.0.13:2181'
+    'zookeeper_host': '172.17.0.1:2181'
 }
 
 service_conf_path = os.path.join(CONF_BASE, 'distrib.yaml')
@@ -33,3 +33,7 @@ def spark_context(pipeline_name):
         conf.set('spark.executor.uri', DISTRIB_CONF['spark_binary'])
         _SPARK_CTX = pyspark.SparkContext(conf=conf)
     return _SPARK_CTX
+
+
+def is_rdd(obj):
+    return isinstance(obj, pyspark.rdd.RDD)

@@ -1,11 +1,12 @@
 import random
 import logging
 from hashlib import md5
+from itertools import chain
 from functools import partial
 from joblib import Parallel, delayed
 from atoll.pipes import Pipe, Branches
 from atoll.friendly import get_example
-from atoll.distrib import spark_context
+from atoll.distrib import spark_context, is_rdd
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,8 @@ def prep_func(pipe, **kwargs):
                 raise KeyError('Missing expected keyword argument: {}'.format(key))
         return partial(pipe.func, **kwargs_)
 
+def kv_func(f, k, v):
+    return k, f(v)
 
 def execution(f):
     def decorated(self, pipe, input, **kwargs):
@@ -84,7 +87,7 @@ class Pipeline(Pipe):
                     pass
                 else:
                     rdd = getattr(rdd, op)(func)
-            return rdd.collect()
+            return rdd.collect() if is_rdd(rdd) else rdd
 
         else:
             if nested:
@@ -94,7 +97,6 @@ class Pipeline(Pipe):
 
             for op, pipe in self.pipes:
                 try:
-                    print('calling', pipe)
                     input = getattr(self, '_' + op)(pipe, input, **kwargs)
                 except:
                     logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(
@@ -145,7 +147,23 @@ class Pipeline(Pipe):
         return Pipe(func, *args, **kwargs)
 
     @composition
+    def flatMap(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
     def mapValues(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def flatMapValues(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def reduce(self, func, *args, **kwargs):
+        return Pipe(func, *args, **kwargs)
+
+    @composition
+    def reduceByKey(self, func, *args, **kwargs):
         return Pipe(func, *args, **kwargs)
 
     @composition
@@ -169,12 +187,50 @@ class Pipeline(Pipe):
         return self.parallel(delayed(func)(*i) for i in input)
 
     @execution
+    def _flatMap(self, func, input):
+        if not isinstance(input[0], tuple):
+            input = [(i,) for i in input]
+        return [result for result in chain(*self.parallel(delayed(func)(*i) for i in input))]
+
+    @execution
     def _mapValues(self, func, input):
         if isinstance(input, dict):
             input = input.items()
         # TODO should we handle dicts like this?
         # or throw an error w/ a helpful message?
+        func = partial(kv_func, func)
         return self.parallel(delayed(func)(k, v) for k, v in input)
+
+    @execution
+    def _flatMapValues(self, func, input):
+        if isinstance(input, dict):
+            input = input.items()
+        func = partial(kv_func, func)
+
+        # perhaps this can be improved
+        return [result for result in
+                chain(*[[(k, v) for v in vs] for k, vs in
+                        self.parallel(delayed(func)(*i) for i in input)])]
+
+    @execution
+    def _reduce(self, func, input):
+        output = input[0]
+        for i in input[1:]:
+            output = func(output, i)
+        return output
+
+    @execution
+    def _reduceByKey(self, func, input):
+        if isinstance(input, dict):
+            input = input.items()
+
+        results = {}
+        for k, v in input:
+            try:
+                results[k] = func(results[k], v)
+            except KeyError:
+                results[k] = v
+        return list(results.items())
 
     @execution
     def _fork(self, funcs, input):
