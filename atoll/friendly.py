@@ -1,6 +1,7 @@
 import inspect
 from itertools import islice
 from functools import partial
+from types import BuiltinFunctionType
 
 
 def _get_name(func):
@@ -32,7 +33,13 @@ def signature(func):
     elif isinstance(func, partial):
         return str(signature(func.func))
     else:
-        return str(inspect.signature(func))
+        try:
+            return str(inspect.signature(func))
+        except ValueError:
+            if isinstance(func, BuiltinFunctionType):
+                return '(builtin)'
+            else:
+                raise
 
 
 def get_example(input):
