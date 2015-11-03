@@ -27,8 +27,12 @@ class Pipe(object):
 
 
 class Branches(object):
-    def __init__(self, funcs):
-        self.branches = [Pipe(f) for f in funcs]
+    def __init__(self, branches):
+        """
+        Branches must either be pipelines or None,
+        which represents an identity pipeline.
+        """
+        self.branches = [b if b is not None else Pipe(b) for b in branches]
         self.name = '|'.join([str(b) for b in self.branches])
         self.sig = [str(b.sig) for b in self.branches]
         self.expected_kwargs = sum([b.expected_kwargs for b in self.branches], [])

@@ -26,6 +26,17 @@ def composition(f):
     return decorated
 
 
+def branching(f):
+    def decorated(self, *funcs):
+        for func in funcs:
+            assert func is None or isinstance(func, Pipeline), 'Fork branches must be pipelines'
+        branches = f(self, funcs)
+        self.expected_kwargs += branches.expected_kwargs
+        self.pipes.append((f.__name__, branches))
+        return self
+    return decorated
+
+
 def prep_func(pipe, **kwargs):
     """
     Prepares a pipe's function or branches
@@ -58,12 +69,12 @@ class Pipeline(Pipe):
         self.expected_kwargs = []
         self.pipes = []
 
-    def func(self, input, **kwargs):
+    def func(self, input, distributed=False, **kwargs):
         """
         Used if the pipeline is nested in another.
         This prevents nested pipelines from running their own parallel processes.
         """
-        return self(input, nested=True, **kwargs)
+        return self(input, distributed=distributed, nested=True, **kwargs)
 
     def __call__(self, input, n_jobs=1, distributed=False, validate=False, nested=False, **kwargs):
         """
@@ -74,17 +85,29 @@ class Pipeline(Pipe):
         if validate and not nested:
             self.validate(input, n_jobs=n_jobs)
 
-        if distributed and not nested:
-            sc = spark_context(self.name)
-            n_jobs = None if n_jobs <= 0 else n_jobs
-            rdd = sc.parallelize(input, n_jobs)
-            print('BUILDING SPARK PIPELINE')
+        if distributed:
+            rdd = input
+            if not is_rdd(input):
+                sc = spark_context(self.name)
+                n_jobs = None if n_jobs <= 0 else n_jobs
+                rdd = sc.parallelize(input, n_jobs)
             for op, pipe in self.pipes:
-                print('OPERATOR', op)
-                func = prep_func(pipe)
-                if op in ['fork', 'split']:
-                    # TODO branches need to be handled specially
-                    pass
+                func = prep_func(pipe, **kwargs)
+                if op == 'fork':
+                    # cache the current RDD
+                    rdd.cache()
+
+                    # bleh, build out each branch as an RDD,
+                    # then we have to (afaik) collect their results
+                    # then build a new rdd out of that
+                    rdds = [branch(rdd, distributed=True) for branch in func]
+                    rdd = sc.parallelize([r.collect() if is_rdd(r) else r for r in rdds], n_jobs)
+                elif op == 'to':
+                    # the `to` operation requires the resulting dataset
+                    # so we have to collect the results (if necessary)
+                    # we don't create the new RDD, we'll let the next
+                    # iteration do so if necessary
+                    rdd = self._to(pipe, rdd.collect() if is_rdd(rdd) else rdd, **kwargs)
                 else:
                     rdd = getattr(rdd, op)(func)
             return rdd.collect() if is_rdd(rdd) else rdd
@@ -166,12 +189,8 @@ class Pipeline(Pipe):
     def reduceByKey(self, func, *args, **kwargs):
         return Pipe(func, *args, **kwargs)
 
-    @composition
-    def fork(self, *funcs):
-        return Branches(funcs)
-
-    @composition
-    def split(self, *funcs):
+    @branching
+    def fork(self, funcs):
         return Branches(funcs)
 
     @execution
@@ -235,10 +254,6 @@ class Pipeline(Pipe):
     @execution
     def _fork(self, funcs, input):
         return tuple(self.parallel(delayed(func)(input) for func in funcs))
-
-    @execution
-    def _split(self, funcs, input):
-        return tuple(self.parallel(delayed(func)(i) for func, i in zip(funcs, input)))
 
     def _serial(self, stream):
         return [func(*args, **kwargs) for func, args, kwargs in stream]
