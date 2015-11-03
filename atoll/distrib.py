@@ -24,7 +24,7 @@ _SPARK_CTX = None
 def spark_context(pipeline_name):
     global _SPARK_CTX
     if pyspark is None:
-        raise Exception('`pyspark` is required to run a distributed pipeline.')
+        raise ImportError('`pyspark` is required to run a distributed pipeline.')
 
     if _SPARK_CTX is None:
         conf = pyspark.SparkConf()
