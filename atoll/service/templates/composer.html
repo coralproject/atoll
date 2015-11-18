@@ -1,0 +1,87 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<h4>Available Metrics</h4>
+<ul class="toolkit">
+  {% for name, func in user_metrics.items() %}
+    <li><em>{{ name }}</em> - {{ func.__doc__ }}</li>
+  {% endfor %}
+</ul>
+
+<form name="composer">
+<textarea name="workspace">
+((1-moderated_prob) * like_score)^2
+</textarea>
+<input type="submit" value="Evaluate">
+</form>
+
+<div class="output">
+  <h4>Your function</h4>
+  <div class="expr"></div>
+
+  <h4>Your results</h4>
+  <ul class="results"></ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/javascript">
+MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [["$","$"]],
+        displayMath: [['$$','$$']],
+        processEscapes: true
+    }
+});
+MathJax.Hub.Startup.onload();
+
+$(function() {
+    // For now, start with some fake data
+    var users;
+    $.ajax({
+      type: 'GET',
+      dataType: 'json',
+      url: "{{ url_for('composer.data') }}",
+      success: function(data, status, xhr) {
+        users = data.users;
+      },
+      error: function(xhr, status, err) {
+        console.log('error');
+        console.log(err);
+      }
+    });
+
+    $('form[name=composer]').on('submit', function(ev) {
+      ev.preventDefault();
+      $.ajax({
+        type: 'POST',
+        url: "{{ url_for('composer.evaluate') }}",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({
+          expr: $(this).find('textarea').val(),
+          users: users
+        }),
+        success: function(data, status, xhr) {
+          $('.output').show();
+          $('.expr').html('$$'+data.expr_tex+'$$');
+          MathJax.Hub.Queue(['Typeset', MathJax.Hub, $('.expr')[0]]);
+
+          $res = $('.results');
+          $res.empty();
+          for (var i=0; i < data.texes.length; i++) {
+            $res.append('<li>$$' + data.texes[i] + '=' + data.results[i].toFixed(3) + '$$</li>');
+          }
+
+          MathJax.Hub.Queue(['Typeset', MathJax.Hub, $('.results')[0]]);
+        },
+        error: function(xhr, status, error) {
+          alert(xhr.responseText);
+        }
+      });
+      return false;
+    });
+});
+</script>
+{% endblock %}
