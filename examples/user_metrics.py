@@ -6,7 +6,7 @@ from examples.common import beta_binomial_model, gamma_poission_model, standardi
 
 def like_score(comments, k=1, theta=2):
     """
-    Approval by the community
+    Estimated number of likes a comment by this user will get
     """
     X = np.array([c['likes'] for c in comments])
     n = len(X)
@@ -19,7 +19,7 @@ def like_score(comments, k=1, theta=2):
 
 def starred_score(comments, alpha=2, beta=2):
     """
-    Approval by the organization
+    Probability that a comment by this user will be an editor's pick
     """
     # assume whether or not a comment is starred
     # is drawn from a binomial distribution parameterized by n, p
@@ -37,7 +37,7 @@ def starred_score(comments, alpha=2, beta=2):
 
 def moderated_prob(comments, alpha=2, beta=2):
     """
-    Probability that a comment is moderated
+    Probability that a user's comment will be moderated
     """
     y = sum(1 for c in comments if c['moderated'])
     n = len(comments)
@@ -45,6 +45,9 @@ def moderated_prob(comments, alpha=2, beta=2):
 
 
 def discussion_score(comments, k=1, theta=2):
+    """
+    Estimated number of replies a comment by this user will get
+    """
     X = np.array([c['n_replies'] for c in comments])
     n = len(X)
     return {'discussion_score': gamma_poission_model(X, n, k, theta, 0.05)}

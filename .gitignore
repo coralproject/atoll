@@ -2,5 +2,6 @@
 *.egg-info
 *.pyc
 *.swp
+*.json
 dist/
 docs/_build

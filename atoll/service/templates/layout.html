@@ -19,12 +19,20 @@
     }
 
     textarea {
-      padding: 1em;
+      padding: 2em 1em;
       min-height: 6em;
-      width: 22em;
+      width: 100%;
       resize: none;
       display: block;
       margin: 1em auto;
+      text-align: center;
+      border: 1px solid #eee;
+    }
+
+    input[type=text] {
+      border: 1px solid #eee;
+      padding: 0.5em 1em;
+      width: 100%;
     }
 
     input[type=submit] {
@@ -43,6 +51,68 @@
 
     .output {
       display: none;
+    }
+
+    nav li {
+      float: left;
+      padding: 1em;
+      cursor: pointer;
+    }
+    nav .selected {
+      background: #eee;
+    }
+
+    section {
+      padding: 2em 0;
+      clear: both;
+    }
+
+    .examples > li {
+      padding: 2em 0;
+      overflow: hidden;
+      border-bottom: 1px solid #aaa;
+    }
+    .examples a {
+      margin: 1em 0;
+      float: left;
+      display: block;
+    }
+
+    .result {
+      float: right;
+    }
+
+    .overlay {
+      position: fixed;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      padding: 2em;
+    }
+    .overlay .close {
+      position: fixed;
+      top: 0.5em;
+      right: 1em;
+      color: #fff;
+      cursor: pointer;
+    }
+    .preview {
+      background: #fff;
+      padding: 2em;
+      overflow-y: scroll;
+      position: absolute;
+      top: 2em;
+      right: 2em;
+      bottom: -2em;
+      left: 2em;
+    }
+    .preview > li {
+      padding: 2em 0 0 0;
+      border-bottom: 1px solid #aaa;
     }
   </style>
 </head>

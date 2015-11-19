@@ -41,6 +41,10 @@ def max_thread_width(thread):
     )
 
 
+def count_replies(thread):
+    return 1 + sum(count_replies(r) for r in thread['replies'])
+
+
 def reconstruct_discussion(asset_id, comments):
     parents = defaultdict(list)
     for c in comments:

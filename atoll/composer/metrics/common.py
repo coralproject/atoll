@@ -2,6 +2,13 @@ import numpy as np
 from scipy import stats
 
 
+def args(*args):
+    def wrapper(func):
+        func.args = args
+        return func
+    return wrapper
+
+
 def beta_binomial_model(y, n, alpha, beta, quantile):
     # alpha and beta are priors for the beta prior
     # the beta posterior is Beta(y + alpha, n - y + beta)
