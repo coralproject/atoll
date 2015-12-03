@@ -84,3 +84,9 @@ results = pipeline(input, distributed=True)
 ```
 
 This support is still being worked on; it currently only supports Mesos clusters.
+
+---
+
+## Notes
+
+- Until `joblib` switches from `pickle` to `dill` for serialization (see <https://github.com/joblib/joblib/pull/240>) we can't use lambdas: functions used in pipelines must be defined at the top-level of a module.
