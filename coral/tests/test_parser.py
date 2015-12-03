@@ -1,5 +1,5 @@
 import unittest
-from atoll.composer.parser import parse
+from coral.composer.parser import parse
 
 def my_func(input):
     return input + 10
