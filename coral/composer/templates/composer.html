@@ -1,0 +1,205 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<div class="overlay">
+  <span class="close">close</span>
+  <ul class="preview">
+  </ul>
+</div>
+
+<nav>
+  <ul>
+    {% for metric_type, mets in metrics %}
+      <li data-type="{{ metric_type }}">{{ metric_type.replace('_', ' ')|title }}</li>
+    {% endfor %}
+  </ul>
+</nav>
+
+<section>
+  <h4>Available Metrics</h4>
+
+  {% for metric_type, mets in metrics %}
+  <ul class="toolkit" data-type="{{ metric_type }}" style="display:none;">
+    {% if not mets %}
+      <li>At the moment there are no metrics available for this</li>
+    {% else %}
+      {% for name, func in mets.items() %}
+        <li><em>{{ name }}</em> - {{ func.__doc__ }}</li>
+      {% endfor %}
+    {% endif %}
+  </ul>
+  {% endfor %}
+
+  <form name="composer">
+    <textarea name="workspace">((1-moderated_prob) * predicted_likes)^2</textarea>
+    <input type="submit" value="Evaluate">
+  </form>
+
+  <div class="output">
+    <h4>Your function</h4>
+    <div class="expr"></div>
+  </div>
+</section>
+
+<section>
+  <h4>Examples</h4>
+  <form name="select-example">
+    <input name="example" type="text" placeholder="Paste permalink to an example">
+    <h6>for the demo, the following user ids are available: [2467874, 7449791, 23385805, 14317142, 20909421]</h6>
+    <input type="submit" value="Add">
+  </form>
+  <ul class="examples">
+  </ul>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/html" id="comment_tmpl">
+  <li data-id="<%= id %>" class="comment">
+    <p><%= body %></p>
+    <ul class="meta">
+      <li>likes: <%= likes %></li>
+      <li>moderated: <%= moderated %></li>
+      <li>replies: <%= n_replies %></li>
+      <li>starred: <%= starred %></li>
+    </ul>
+  </li>
+</script>
+
+<script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/javascript">
+MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [["$","$"]],
+        displayMath: [['$$','$$']],
+        processEscapes: true
+    }
+});
+MathJax.Hub.Startup.onload();
+
+// Simple JavaScript Templating
+// John Resig - http://ejohn.org/ - MIT Licensed
+(function(){
+  var cache = {};
+
+  this.tmpl = function tmpl(str, data){
+    // Figure out if we're getting a template, or if we need to
+    // load the template - and be sure to cache the result.
+    var fn = !/\W/.test(str) ?
+      cache[str] = cache[str] ||
+        tmpl(document.getElementById(str).innerHTML) :
+
+      // Generate a reusable function that will serve as a template
+      // generator (and which will be cached).
+      new Function("obj",
+        "var p=[],print=function(){p.push.apply(p,arguments);};" +
+
+        // Introduce the data as local variables using with(){}
+        "with(obj){p.push('" +
+
+        // Convert the template into pure JavaScript
+        str
+          .replace(/[\r\t\n]/g, " ")
+          .split("<%").join("\t")
+          .replace(/((^|%>)[^\t]*)'/g, "$1\r")
+          .replace(/\t=(.*?)%>/g, "',$1,'")
+          .split("\t").join("');")
+          .split("%>").join("p.push('")
+          .split("\r").join("\\'")
+      + "');}return p.join('');");
+
+    // Provide some basic currying to the user
+    return data ? fn( data ) : fn;
+  };
+})();
+
+$(function() {
+  // For now, start with some fake data
+  var users = {};
+  $('form[name=select-example]').on('submit', function(ev) {
+    ev.preventDefault();
+    var id = $(this).find('[name=example]').val();
+    if (id in users) {
+      alert('already added this user');
+    } else {
+      $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        contentType: 'application/json',
+        url: "{{ url_for('composer.data') }}",
+        data: {
+          id: id
+        },
+        success: function(data, status, xhr) {
+          users[data.user.id] = data.user;
+          $('.examples').append('<li><a href="#" data-id="'+data.user.id+'">'+data.user.id+'</a><div class="result"></div></li>');
+        },
+        error: function(xhr, status, err) {
+          console.log('error');
+          console.log(err);
+        }
+      });
+    }
+    return false;
+  });
+
+  $('form[name=composer]').on('submit', function(ev) {
+    ev.preventDefault();
+    $.ajax({
+      type: 'POST',
+      url: "{{ url_for('composer.evaluate') }}",
+      dataType: "json",
+      contentType: "application/json",
+      data: JSON.stringify({
+        expr: $(this).find('textarea').val(),
+        users: users
+      }),
+      success: function(data, status, xhr) {
+        $('.output').show();
+        $('.expr').html('$$'+data.expr_tex+'$$');
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub, $('.expr')[0]]);
+
+        $('.result').empty();
+        for (var i=0; i < data.texes.length; i++) {
+          $('.result').eq(i).append('<li>$$' + data.texes[i] + '=' + data.results[i].toFixed(3) + '$$</li>');
+        }
+
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub, $('.results')[0]]);
+      },
+      error: function(xhr, status, error) {
+        alert(xhr.responseText);
+      }
+    });
+    return false;
+  });
+
+  $('nav li').on('click', function() {
+      var type = $(this).data('type');
+      $('nav li').removeClass('selected');
+      $('.toolkit').hide();
+      $(this).addClass('selected');
+      $('[data-type='+type+']').show();
+  });
+  $('nav li').eq(0).click();
+
+  $('.examples').on('click', 'a', function(ev) {
+      ev.preventDefault();
+      var id = $(this).data('id'),
+          user = users[id];
+
+      // show user's comments (just dump them all for now)
+      $('.overlay').fadeIn();
+      $('.overlay .preview').empty();
+      for (var i=0;i<user.comments.length;i++) {
+        $('.overlay .preview').append(tmpl('comment_tmpl', user.comments[i]));
+      }
+      return false;
+  });
+
+  $('.overlay .close').on('click', function() {
+      $('.overlay').fadeOut();
+  });
+});
+</script>
+{% endblock %}

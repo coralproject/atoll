@@ -5,6 +5,7 @@ from types import BuiltinFunctionType
 
 
 def _get_name(func):
+    """get a function's name"""
     if hasattr(func, '__name__'):
         if func.__name__ == '<lambda>':
             # this is pretty sketchy
@@ -17,6 +18,7 @@ def _get_name(func):
 
 
 def name(func, *args, **kwargs):
+    """get a function's name, with called args if any"""
     name = _get_name(func)
     args = ', '.join([ags for ags in [
                         ', '.join(map(str, args)),
@@ -28,6 +30,7 @@ def name(func, *args, **kwargs):
 
 
 def signature(func):
+    """get a function's signature"""
     if inspect.isclass(func):
         return str(inspect.signature(func.__call__))
     elif isinstance(func, partial):
@@ -43,9 +46,7 @@ def signature(func):
 
 
 def get_example(input):
-    """
-    Produce an "example" out of some input.
-    """
+    """produce an "example" out of some input"""
     if isinstance(input, tuple):
         return '({})'.format(','.join('{}'.format(get_example(i)) for i in input))
     if isinstance(input, dict):

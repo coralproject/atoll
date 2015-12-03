@@ -17,6 +17,7 @@ class Pipe(object):
         self.name = name(func, *args, **kwargs)
         self.sig = signature(func)
 
+        # prep the pipe's function
         if args or kwargs:
             self.func = partial(func, *args, **kwargs)
         else:

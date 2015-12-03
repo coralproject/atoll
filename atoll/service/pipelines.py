@@ -1,16 +1,20 @@
 from atoll.service.tasks import pipeline_task
 from flask import Blueprint, request, abort, jsonify
 
-bp = Blueprint('pipelines',
-               __name__,
-               url_prefix='/pipelines')
+
+def pipeline_blueprint():
+    """
+    Create the pipeline blueprint.
+    (for consistency)
+    """
+    return Blueprint('pipelines', __name__,
+                     url_prefix='/pipelines')
 
 
-def register_pipeline(endpoint, pl):
+def register_pipeline(endpoint, pl, bp):
     """
     Register a pipeline at the specified endpoint.
     It will be available at `/pipelines/<endpoint>`.
-
     Pipelines must be registered _before_ the app is created!
     """
     def handler():

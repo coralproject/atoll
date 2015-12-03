@@ -1,10 +1,9 @@
-from atoll import __version__
 from setuptools import setup, find_packages
 
 
 setup(
     name='atoll',
-    version=__version__,
+    version='0.0.1',
     description='data analysis pipelines',
     url='https://github.com/coralproject/atoll',
     author='The Coral Project',
