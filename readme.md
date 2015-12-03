@@ -7,7 +7,7 @@ Install via `pip`:
 
     pip install git+https://github.com/coralproject/atoll
 
-`atoll` supports both Python 3 and Python 2.7, but Python 3 is recommended (Python 2.7 support is not fully tested).
+`atoll` supports Python 3.4+
 
 ## Setup
 
@@ -36,7 +36,8 @@ If you are running the microservice and using asynchronous requests (i.e. callba
 
 The provided `run` script makes it easy to get this up and running. Install Docker if you do not have it, and then the following commands are available:
 
-    # Pull the necessary Docker images
+    # Pull the necessary Docker images,
+    # setup the Docker containers
     ./run setup
 
     # Start the RabbitMQ container (the Celery broker)
