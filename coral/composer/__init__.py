@@ -1,15 +1,15 @@
 import random
 import inspect
-from atoll.composer.models import User
-from atoll.composer.parser import parse
-from atoll.composer.metrics import user, comment, asset
+from ..models import User
+from ..metrics import user, comment, asset
+from .parser import parse
 from flask import Blueprint, render_template, request, jsonify
 
 bp = Blueprint('composer', __name__, url_prefix='/composer')
 
 
 def prep_metrics(module):
-    """Prep a metrics module by collecting its metric functions
+    """prep a metrics module by collecting its metric functions
     and assigning colors"""
     funcs = {}
     colors = {}

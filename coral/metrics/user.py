@@ -1,8 +1,16 @@
 import numpy as np
-from atoll.composer.metrics.common import gamma_poission_model, beta_binomial_model
+from .common import gamma_poission_model, beta_binomial_model
+from ..models import User
 
 
-def predicted_likes(user, k=1, theta=2):
+def make_user(data):
+    """
+    Convert JSON (dict) data to a User object
+    """
+    return User(**data)
+
+
+def like_score(user, k=1, theta=2):
     """
     Estimated number of likes a comment by this user will get
     """
@@ -12,10 +20,10 @@ def predicted_likes(user, k=1, theta=2):
     # we want to be conservative in our estimate of the poisson's lambda parameter
     # so we take the lower-bound of the 90% confidence interval (i.e. the 0.05 quantile)
     # rather than the expected value
-    return gamma_poission_model(X, n, k, theta, 0.05)
+    return user.id, {'community_score': gamma_poission_model(X, n, k, theta, 0.05)}
 
 
-def edpick_prob(user, alpha=2, beta=2):
+def starred_score(user, alpha=2, beta=2):
     """
     Probability that a comment by this user will be an editor's pick
     """
@@ -27,10 +35,7 @@ def edpick_prob(user, alpha=2, beta=2):
 
     # again, to be conservative, we take the lower-bound
     # of the 90% credible interval (the 0.05 quantile)
-    return beta_binomial_model(y, n, alpha, beta, 0.05)
-
-    # if we wanted the expected value:
-    #return user, alpha/(alpha+beta)
+    return user.id, {'organization_score': beta_binomial_model(y, n, alpha, beta, 0.05)}
 
 
 def moderated_prob(user, alpha=2, beta=2):
@@ -39,15 +44,13 @@ def moderated_prob(user, alpha=2, beta=2):
     """
     y = sum(1 for c in user.comments if c.moderated)
     n = len(user.comments)
-    return beta_binomial_model(y, n, alpha, beta, 0.05)
+    return user.id, {'moderation_prob': beta_binomial_model(y, n, alpha, beta, 0.05)}
 
 
-def predicted_replies(user, k=1, theta=2):
+def discussion_score(user, k=1, theta=2):
     """
     Estimated number of replies a comment by this user will get
     """
     X = np.array([c.n_replies for c in user.comments])
     n = len(X)
-    return gamma_poission_model(X, n, k, theta, 0.05)
-
-
+    return user.id, {'discussion_score': gamma_poission_model(X, n, k, theta, 0.05)}

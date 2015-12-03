@@ -2,11 +2,9 @@ import numpy as np
 from scipy import stats
 
 
-def args(*args):
-    def wrapper(func):
-        func.args = args
-        return func
-    return wrapper
+def merge_dicts(d1, d2):
+    d1.update(d2)
+    return d1
 
 
 def beta_binomial_model(y, n, alpha, beta, quantile):

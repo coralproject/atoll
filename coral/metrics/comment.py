@@ -1,4 +1,4 @@
-from atoll.composer.metrics.common import beta_binomial_model
+from .common import beta_binomial_model
 
 
 def diversity(comment, alpha=2, beta=2):

@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 def composition(f):
+    """decorates a function which builds the pipeline,
+    i.e. a function that adds a new pipe"""
     def decorated(self, func, *args, **kwargs):
         assert ((not isinstance(func, type)) and callable(func)) or func is None, 'Pipes must be callable'
 
@@ -27,6 +29,7 @@ def composition(f):
 
 
 def branching(f):
+    """decorates a branching composition function"""
     def decorated(self, *funcs):
         for func in funcs:
             assert func is None or isinstance(func, Pipeline), 'Fork branches must be pipelines'
@@ -54,9 +57,11 @@ def prep_func(pipe, **kwargs):
         return partial(pipe.func, **kwargs_)
 
 def kv_func(f, k, v):
+    """helper to apply function `f` to value `v`"""
     return k, f(v)
 
 def execution(f):
+    """decorates the function which executes a corresponding pipe"""
     def decorated(self, pipe, input, **kwargs):
         func = prep_func(pipe, **kwargs)
         return f(self, func, input)
@@ -87,10 +92,13 @@ class Pipeline(Pipe):
 
         if distributed:
             rdd = input
+            # create RDD from input if necessary
             if not is_rdd(input):
                 sc = spark_context(self.name)
                 n_jobs = None if n_jobs <= 0 else n_jobs
                 rdd = sc.parallelize(input, n_jobs)
+
+            # run the pipes
             for op, pipe in self.pipes:
                 func = prep_func(pipe, **kwargs)
                 if op == 'fork':
@@ -114,6 +122,7 @@ class Pipeline(Pipe):
 
         else:
             if nested:
+                # execute serially if nested
                 self.parallel = self._serial
             else:
                 self.parallel = Parallel(n_jobs=n_jobs)
@@ -163,35 +172,46 @@ class Pipeline(Pipe):
 
     @composition
     def to(self, func, *args, **kwargs):
+        """call `func` with all input"""
         return Pipe(func, *args, **kwargs)
 
     @composition
     def map(self, func, *args, **kwargs):
+        """call `func` for each input"""
         return Pipe(func, *args, **kwargs)
 
     @composition
     def flatMap(self, func, *args, **kwargs):
+        """map but flatten result"""
         return Pipe(func, *args, **kwargs)
 
     @composition
     def mapValues(self, func, *args, **kwargs):
+        """call `func` for each value of a list of key-value pairs"""
         return Pipe(func, *args, **kwargs)
 
     @composition
     def flatMapValues(self, func, *args, **kwargs):
+        """mapValues but flatten the result"""
         return Pipe(func, *args, **kwargs)
 
     @composition
     def reduce(self, func, *args, **kwargs):
+        """combine/collapse inputs by applying `func`"""
         return Pipe(func, *args, **kwargs)
 
     @composition
     def reduceByKey(self, func, *args, **kwargs):
+        """combine/collapse inputs with matching keys by applying `func`"""
         return Pipe(func, *args, **kwargs)
 
     @branching
     def fork(self, funcs):
+        """copy input for each func in `funcs`"""
         return Branches(funcs)
+
+    # execution methods just take care of execution of the pipes
+    # produced by the above composition/branching methods
 
     @execution
     def _to(self, func, input):

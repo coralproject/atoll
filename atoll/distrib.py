@@ -22,6 +22,7 @@ if os.path.exists(service_conf_path):
 _SPARK_CTX = None
 
 def spark_context(pipeline_name):
+    """return the app's spark context; make one if necessary"""
     global _SPARK_CTX
     if pyspark is None:
         raise ImportError('`pyspark` is required to run a distributed pipeline.')
