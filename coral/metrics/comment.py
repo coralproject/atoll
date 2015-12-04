@@ -3,14 +3,12 @@ from ..models import Comment
 
 
 def make_comment(data):
-    """
-    Convert JSON (dict) data to a Comment object
-    """
+    """convert json (dict) data to a Comment object"""
     return Comment(**data)
 
 
 def diversity_score(comment, alpha=2, beta=2):
-    """Probability that a new reply would be from a new user"""
+    """probability that a new reply would be from a new user"""
     seen_users = set()
 
     unique_participants = []

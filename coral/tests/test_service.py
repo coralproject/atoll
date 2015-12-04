@@ -32,11 +32,13 @@ class ServiceTest(unittest.TestCase):
         self.counter += 1
         return {
             'id': self.counter,
+            'user_id': self.counter,
             'likes': 10,
             'starred': False,
             'moderated': True,
             'parent_id': None,
             'content': 'foo',
+            'created_at': 0,
             'replies': [self._make_comment(n_replies=n_replies, depth=depth-1) for _ in range(n_replies)]
         }
 
@@ -52,8 +54,6 @@ class ServiceTest(unittest.TestCase):
         resp = self._call_pipeline('users/score', data)
         self.assertEquals(resp.status_code, 200)
 
-        resp_json = json.loads(resp.data.decode('utf-8'))
-
         expected = {
             'id': int,
             'community_score': float,
@@ -61,6 +61,7 @@ class ServiceTest(unittest.TestCase):
             'moderation_prob': float,
             'organization_score': float
         }
+        resp_json = json.loads(resp.data.decode('utf-8'))
         for result in resp_json['results']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
@@ -74,12 +75,39 @@ class ServiceTest(unittest.TestCase):
         resp = self._call_pipeline('comments/score', data)
         self.assertEquals(resp.status_code, 200)
 
-        resp_json = json.loads(resp.data.decode('utf-8'))
-
         expected = {
             'id': int,
             'diversity_score': float,
         }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for result in resp_json['results']:
+            for k, t in expected.items():
+                self.assertTrue(isinstance(result[k], t))
+
+    def test_assets_score(self):
+        data = [{
+            'id': 0,
+            'threads': [
+                self._make_comment(n_replies=2, depth=2),
+                self._make_comment(n_replies=2, depth=2)
+            ]
+        }, {
+            'id': 1,
+            'threads': [
+                self._make_comment(n_replies=2, depth=2),
+                self._make_comment(n_replies=2, depth=2)
+            ]
+        }]
+
+        resp = self._call_pipeline('assets/score', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected = {
+            'id': int,
+            'diversity_score': float,
+            'discussion_score': float,
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
         for result in resp_json['results']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
