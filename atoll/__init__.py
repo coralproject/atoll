@@ -18,7 +18,8 @@ class Atoll():
     @property
     def app(self):
         if not hasattr(self, '_app'):
-            self._app = create_app(self.pipeline_bp)
+            self._app = create_app()
+            self._app.register_blueprint(self.pipeline_bp)
         return self._app
 
     def run(self, port=5001, debug=False):

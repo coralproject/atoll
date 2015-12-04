@@ -24,7 +24,8 @@ register_pipeline('/example', pipeline, pipeline_bp)
 
 class ServiceTest(unittest.TestCase):
     def setUp(self):
-        self.app = create_app(pipeline_bp, **test_config)
+        self.app = create_app(**test_config)
+        self.app.register_blueprint(pipeline_bp)
         self.client = self.app.test_client()
 
     def tearDown(self):

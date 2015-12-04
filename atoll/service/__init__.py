@@ -2,7 +2,7 @@ from flask import Flask
 from atoll.service import errors
 
 
-def create_app(pipeline_bp, package_name=__name__, static_folder='static', template_folder='templates', **config_overrides):
+def create_app(package_name=__name__, static_folder='static', template_folder='templates', **config_overrides):
     app = Flask(package_name,
                 static_url_path='/static',
                 static_folder=static_folder,
@@ -13,6 +13,5 @@ def create_app(pipeline_bp, package_name=__name__, static_folder='static', templ
 
     # Register blueprints.
     app.register_blueprint(errors.bp)
-    app.register_blueprint(pipeline_bp)
 
     return app
