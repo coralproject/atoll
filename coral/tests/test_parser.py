@@ -1,5 +1,6 @@
 import unittest
-from coral.composer.parser import parse
+from coral.composer.parser import parse, parse_func
+
 
 def my_func(input):
     return input + 10
@@ -30,3 +31,15 @@ class ParserTests(unittest.TestCase):
     def test_parse_unknown_func(self):
         expr = '2*4+unknown'
         self.assertRaises(Exception, parse, expr, self.inputs, self.funcs, self.colors)
+
+    def test_parse_simple_func(self):
+        expr = '2*4 + my_func'
+        whitelist = [my_func.__name__]
+        f = parse_func(expr, whitelist, globals())
+        result = f(10)
+        self.assertEqual(result, 28)
+
+    def test_parse_illegal_func(self):
+        expr = '2*4+unknown'
+        whitelist = []
+        self.assertRaises(ValueError, parse_func, expr, whitelist, locals())
