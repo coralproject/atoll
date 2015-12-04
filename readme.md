@@ -33,6 +33,7 @@ See the docs: (hosted docs coming soon)
 
 For now, you can build them yourself:
 
+    git submodule update --init
     cd docs
     make clean; make html
 

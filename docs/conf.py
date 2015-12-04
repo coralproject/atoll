@@ -20,8 +20,6 @@ sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('_ext'))
 sys.path.insert(0, os.path.abspath('_themes'))
 
-from atoll import __version__
-
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -52,7 +50,7 @@ copyright = u'2015, The Coral Project'
 # built documents.
 #
 # The short X.Y version.
-version = __version__
+version = '0.0.1'
 # The full version, including alpha/beta/rc tags.
 release = version
 

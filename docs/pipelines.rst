@@ -202,16 +202,7 @@ Currently, only a Mesos cluster managed by Zookeeper is supported.
 
 `See here <https://github.com/ftzeng/docker-mesos-pyspark-hdfs>`_ for some Docker files to help you setup a cluster to work with (`see here <http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker>`_ for more details)).
 
-You should also create a config file at ``/etc/atoll/conf/distrib.yaml`` which specifies:
-    - ``spark_binary``: Where to fetch a Spark binary archive
-    - ``zookeeper_host``: The ``ip:port`` of your Zookeeper host
-
-For example:
-
-.. code-block:: yaml
-
-    spark_binary: http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz
-    zookeeper_host: 172.17.0.1:2181
+You will likely also want to specify your own configuration. See :ref:`configuration`.
 
 Note that if you are using Docker for your cluster, you may need to export the following env variables before running your pipeline:
 
