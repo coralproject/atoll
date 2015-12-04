@@ -1,5 +1,5 @@
 from atoll.service.tasks import pipeline_task
-from flask import Blueprint, request, abort, jsonify
+from flask import Blueprint, request, jsonify
 
 
 def pipeline_blueprint():
@@ -20,7 +20,7 @@ def register_pipeline(endpoint, pl, bp):
     def handler():
         data = request.get_json()
         if 'data' not in data:
-            abort(400)
+            return 'The POSTed JSON data is missing the "data" key.', 400
         input = data['data']
 
         if 'callback' not in data:
@@ -32,5 +32,5 @@ def register_pipeline(endpoint, pl, bp):
             })
         else:
             pipeline_task.delay(pl, input, data['callback'])
-            return '', 202
+            return 'Pipeline job queued.', 202
     bp.add_url_rule(endpoint, pl.name, handler, methods=['POST'])
