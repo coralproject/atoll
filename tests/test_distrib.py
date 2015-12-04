@@ -3,13 +3,14 @@ import unittest
 from socket import socket
 from unittest import skipIf
 from atoll import Pipeline
-from atoll.distrib import pyspark, DISTRIB_CONF
+from atoll.distrib import pyspark
+from atoll.config import ZOOKEEPER_HOST
 
 
 def check_cluster():
     try:
         s = socket()
-        ip, port = DISTRIB_CONF['zookeeper_host'].split(':')
+        ip, port = ZOOKEEPER_HOST.split(':')
         s.connect(ip, int(port))
         s.close()
         return True

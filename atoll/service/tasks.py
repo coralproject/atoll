@@ -3,11 +3,11 @@ import json
 import requests
 import traceback
 from celery import Celery
-from atoll.service.conf import SERVICE_CONF
+from atoll.config import WORKER_BROKER, WORKER_BACKEND
 
-celery = Celery('tasks', 
-                backend='amqp',
-                broker='amqp://guest:guest@{}/'.format(SERVICE_CONF['worker_host']))
+celery = Celery('tasks',
+                backend=WORKER_BACKEND,
+                broker=WORKER_BROKER)
 
 
 @celery.task

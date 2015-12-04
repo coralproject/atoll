@@ -16,6 +16,7 @@ setup(
         'joblib',
         'celery',
         'requests',
+        'pyyaml'
     ],
     test_requires=[
         'nose',

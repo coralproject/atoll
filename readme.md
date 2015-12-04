@@ -11,13 +11,21 @@ Install via `pip`:
 
 ## Setup
 
-When running `atoll` as a microservice, you can provide the following configuration files:
+When running `atoll` as a microservice, you can specify a YAML config file by setting the `ATOLL_CONF` env variable, e.g.
 
-#### `service.yaml`
+    export ATOLL_CONF=/path/to/my/conf.yaml
 
-Expected at `/etc/atoll/conf/service.yaml`. This configures the service itself.
+The default configuration is:
 
-The important option here is the `worker_host` option, which specifies the hostname or IP of the Celery broker. By default, this value is `localhost`.
+```yaml
+worker_broker: amqp://guest:guest@localhost/
+worker_backend: amqp
+
+# this must be a _prebuilt_ spark archive, i.e. a spark binary package
+# you can build it and host it yourself if you like.
+spark_binary: http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz
+zookeeper_host: 172.17.0.1:2181
+```
 
 ## Usage
 
@@ -56,26 +64,19 @@ The provided `run` script makes it easy to get this up and running. Install Dock
 
 `atoll` can run its pipelines either on a single computer with multiprocessing or across a Spark cluster.
 
-To run a pipeline across a Spark cluster, there are a few prerequisites:
+To run a pipeline across a Spark cluster you must have a Spark cluster managed by Zookeeper ([see here](https://github.com/ftzeng/docker-mesos-pyspark-hdfs) for some Docker files to get you going, [see here](http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker) for more details).
 
-- A Spark cluster managed by Zookeeper ([see here](https://github.com/ftzeng/docker-mesos-pyspark-hdfs) for some Docker files to get you going, [see here](http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker) for more details)
-- A config file at `/etc/atoll/conf/distrib.yaml` which specifies:
-    - `spark_binary`: Where to fetch a Spark binary archive
-    - `zookeeper_host`: The `ip:port` of your Zookeeper host
+Additionally, you will likely want to provide a config (see above) which specifies:
 
-An example config:
+- `spark_binary`: Where to fetch a Spark binary archive
+- `zookeeper_host`: The `ip:port` of your Zookeeper host
 
-```yaml
-spark_binary: http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz
-zookeeper_host: 172.17.0.1:2181
-```
+See the config above for an example.
 
 Note that if you are using Docker for your cluster, you may need to export the following env variables before running your pipeline:
 
-```bash
-export LIBPROCESS_IP=$(ifconfig docker0 | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}')
-export PYSPARK_PYTHON=/usr/bin/python3
-```
+    export LIBPROCESS_IP=$(ifconfig docker0 | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}')
+    export PYSPARK_PYTHON=/usr/bin/python3
 
 Then, to run a pipeline on the cluster, just pass `distributed=True` when calling the pipeline, e.g:
 
