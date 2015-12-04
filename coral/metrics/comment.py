@@ -1,7 +1,15 @@
 from .common import beta_binomial_model
+from ..models import Comment
 
 
-def diversity(comment, alpha=2, beta=2):
+def make_comment(data):
+    """
+    Convert JSON (dict) data to a Comment object
+    """
+    return Comment(**data)
+
+
+def diversity_score(comment, alpha=2, beta=2):
     """Probability that a new reply would be from a new user"""
     seen_users = set()
 
@@ -18,4 +26,4 @@ def diversity(comment, alpha=2, beta=2):
 
     # again, to be conservative, we take the lower-bound
     # of the 90% credible interval (the 0.05 quantile)
-    return beta_binomial_model(y, n, alpha, beta, 0.05)
+    return comment.id, {'diversity_score': beta_binomial_model(y, n, alpha, beta, 0.05)}

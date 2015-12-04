@@ -13,7 +13,7 @@ class User(Base):
 
 
 class Comment(Base):
-    attrs = ['replies', 'n_replies', 'likes', 'starred', 'moderated', 'content']
+    attrs = ['id', 'parent_id', 'replies', 'n_replies', 'likes', 'starred', 'moderated', 'content']
 
     def __init__(self, **kwargs):
         if 'n_replies' not in kwargs:

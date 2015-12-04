@@ -15,12 +15,10 @@ class Atoll():
         """
         register_pipeline(endpoint, pipeline, self.pipeline_bp)
 
-    @property
-    def app(self):
-        if not hasattr(self, '_app'):
-            self._app = create_app()
-            self._app.register_blueprint(self.pipeline_bp)
-        return self._app
+    def create_app(self, **app_config):
+        self.app = create_app(**app_config)
+        self.app.register_blueprint(self.pipeline_bp)
+        return self.app
 
     def run(self, port=5001, debug=False):
         self.app.run(debug=debug, port=port)
