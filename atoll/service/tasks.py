@@ -16,7 +16,9 @@ def pipeline_task(pipeline, input, callback_url):
     err = None
 
     try:
-        res = pipeline(input)
+        # tasks run serially since multiprocessing
+        # kind of defeats the purpose, no?
+        res = pipeline(input, serial=True)
     except Exception as e:
         if hasattr(e, '__traceback__'): # py3
             tb = e.__traceback__
