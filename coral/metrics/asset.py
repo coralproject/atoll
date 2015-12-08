@@ -1,10 +1,9 @@
-# TODO this has not been tested, this is an in-progress port from elsewhere
 import numpy as np
 from .common import beta_binomial_model, gamma_poission_model
 from ..models import Asset
 
 
-def make_asset(data):
+def make(data):
     """convert json (dict) data to a Asset object"""
     return Asset(**data)
 
@@ -17,7 +16,7 @@ def discussion_score(asset, k=1, theta=2):
     k = np.sum(X) + k
     t = theta/(theta*n + 1)
 
-    return asset.id, {'discussion_score': gamma_poission_model(X, n, k, theta, 0.05)}
+    return gamma_poission_model(X, n, k, theta, 0.05)
 
 
 def diversity_score(asset, alpha=2, beta=2):
@@ -30,7 +29,7 @@ def diversity_score(asset, alpha=2, beta=2):
         n += n_comments
     y = len(X)
 
-    return asset.id, {'diversity_score': beta_binomial_model(y, n, alpha, beta, 0.05)}
+    return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
 def max_thread_depth(thread):

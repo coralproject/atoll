@@ -22,7 +22,7 @@ conv_table = {
 }
 
 
-def parse_func(expr, whitelist, locls):
+def parse_func(expr, whitelist, locals):
     """parses a composer expression into a function
     notes:
     - accepts only basic mathematical operators/functions & whitelisted functions
@@ -33,8 +33,8 @@ def parse_func(expr, whitelist, locls):
     """
     parsed = parse(expr, whitelist)
     src = 'def func(input): return {}'.format(parsed)
-    exec(src, locls)
-    return locls.pop('func')
+    exec(src, locals)
+    return locals.pop('func')
 
 
 def parse(expr, whitelist):

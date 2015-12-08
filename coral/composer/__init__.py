@@ -3,7 +3,7 @@ from . import routes
 
 
 def create_app(package_name=__name__, static_folder='static', template_folder='templates', **config_overrides):
-    """create the composer flask app"""
+    """create the composer (frontend) flask app"""
     app = Flask(package_name,
                 static_url_path='/static',
                 static_folder=static_folder,
