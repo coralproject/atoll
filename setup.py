@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
 
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
 
 setup(
     name='atoll',
@@ -10,14 +12,7 @@ setup(
     license='MIT',
 
     packages=find_packages(),
-    install_requires=[
-        'six',
-        'flask',
-        'joblib',
-        'celery',
-        'requests',
-        'pyyaml'
-    ],
+    install_requires=required,
     test_requires=[
         'nose',
         'httpretty'

@@ -1,0 +1,9 @@
+- hosts: all
+  sudo: yes
+  remote_user: '{{ remote_user }}'
+  vars:
+      app_name: coral
+      wsgi_filename: coral
+  roles:
+    - angstwad.docker_ubuntu
+    - common

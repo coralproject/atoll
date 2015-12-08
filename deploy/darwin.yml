@@ -1,0 +1,9 @@
+- hosts: all
+  sudo: yes
+  remote_user: '{{ remote_user }}'
+  vars:
+      app_name: darwin
+      wsgi_filename: darwin
+  roles:
+    - angstwad.docker_ubuntu
+    - common
