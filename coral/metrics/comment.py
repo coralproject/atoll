@@ -2,7 +2,7 @@ from .common import beta_binomial_model
 from ..models import Comment
 
 
-def make_comment(data):
+def make(data):
     """convert json (dict) data to a Comment object"""
     return Comment(**data)
 
@@ -24,4 +24,4 @@ def diversity_score(comment, alpha=2, beta=2):
 
     # again, to be conservative, we take the lower-bound
     # of the 90% credible interval (the 0.05 quantile)
-    return comment.id, {'diversity_score': beta_binomial_model(y, n, alpha, beta, 0.05)}
+    return beta_binomial_model(y, n, alpha, beta, 0.05)

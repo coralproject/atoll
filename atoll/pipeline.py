@@ -81,7 +81,7 @@ class Pipeline(Pipe):
         """
         return self(input, distributed=distributed, nested=True, **kwargs)
 
-    def __call__(self, input, n_jobs=1, distributed=False, validate=False, nested=False, **kwargs):
+    def __call__(self, input, n_jobs=1, serial=False, distributed=False, validate=False, nested=False, **kwargs):
         """
         Specify `validate=True` to first
         check the pipeline with a random sample from the input
@@ -121,11 +121,13 @@ class Pipeline(Pipe):
             return rdd.collect() if is_rdd(rdd) else rdd
 
         else:
-            if nested:
+            if nested or serial:
                 # execute serially if nested
-                self.parallel = self._serial
+                self.executor = self._serial
+                self.funcproc = self.__s
             else:
-                self.parallel = Parallel(n_jobs=n_jobs)
+                self.executor = Parallel(n_jobs=n_jobs)
+                self.funcproc = self.__p
 
             for op, pipe in self.pipes:
                 try:
@@ -137,7 +139,8 @@ class Pipeline(Pipe):
                         get_example(input)))
                     raise
 
-            del self.parallel
+            del self.executor
+            del self.funcproc
         return input
 
     def __repr__(self):
@@ -223,13 +226,13 @@ class Pipeline(Pipe):
     def _map(self, func, input):
         if not isinstance(input[0], tuple):
             input = [(i,) for i in input]
-        return self.parallel(delayed(func)(*i) for i in input)
+        return self.executor(self.funcproc(func)(*i) for i in input)
 
     @execution
     def _flatMap(self, func, input):
         if not isinstance(input[0], tuple):
             input = [(i,) for i in input]
-        return [result for result in chain(*self.parallel(delayed(func)(*i) for i in input))]
+        return [result for result in chain(*self.executor(self.funcproc(func)(*i) for i in input))]
 
     @execution
     def _mapValues(self, func, input):
@@ -238,7 +241,7 @@ class Pipeline(Pipe):
         # TODO should we handle dicts like this?
         # or throw an error w/ a helpful message?
         func = partial(kv_func, func)
-        return self.parallel(delayed(func)(k, v) for k, v in input)
+        return self.executor(self.funcproc(func)(k, v) for k, v in input)
 
     @execution
     def _flatMapValues(self, func, input):
@@ -249,7 +252,7 @@ class Pipeline(Pipe):
         # perhaps this can be improved
         return [result for result in
                 chain(*[[(k, v) for v in vs] for k, vs in
-                        self.parallel(delayed(func)(*i) for i in input)])]
+                        self.executor(self.funcproc(func)(*i) for i in input)])]
 
     @execution
     def _reduce(self, func, input):
@@ -273,7 +276,13 @@ class Pipeline(Pipe):
 
     @execution
     def _fork(self, funcs, input):
-        return tuple(self.parallel(delayed(func)(input) for func in funcs))
+        return tuple(self.executor(self.funcproc(func)(input) for func in funcs))
 
     def _serial(self, stream):
-        return [func(*args, **kwargs) for func, args, kwargs in stream]
+        return list(stream)
+
+    def __p(self, func):
+        return delayed(func)
+
+    def __s(self, func):
+        return func

@@ -6,6 +6,7 @@ from atoll.service.pipelines import register_pipeline, pipeline_blueprint
 class Atoll():
     def __init__(self):
         self.pipeline_bp = pipeline_blueprint()
+        self.blueprints = []
 
     def register_pipeline(self, endpoint, pipeline):
         """
@@ -18,6 +19,8 @@ class Atoll():
     def create_app(self, **app_config):
         self.app = create_app(**app_config)
         self.app.register_blueprint(self.pipeline_bp)
+        for bp in self.blueprints:
+            self.app.register_blueprint(bp)
         return self.app
 
     def run(self, port=5001, debug=False):

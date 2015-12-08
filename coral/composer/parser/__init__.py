@@ -1,5 +1,6 @@
 import re
 from .numeric import NumericStringParser
+from .function import parse_func
 
 
 # TODO make this take more than comments

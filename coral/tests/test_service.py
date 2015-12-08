@@ -25,6 +25,15 @@ class ServiceTest(unittest.TestCase):
                                  data=json.dumps({'data': data}),
                                  headers=headers)
 
+    def _call_darwin(self, domain, data, expr):
+        headers = [('Content-Type', 'application/json')]
+        return self.client.post('/darwin/{}'.format(domain),
+                                data=json.dumps({
+                                    'data': data,
+                                    'expr': expr
+                                }),
+                                headers=headers)
+
     def _make_comment(self, n_replies=0, depth=1):
         if depth == 0:
             n_replies = 0
@@ -111,3 +120,66 @@ class ServiceTest(unittest.TestCase):
         for result in resp_json['results']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
+
+    def test_darwin_user_domain(self):
+        data = [{
+            'id': 0,
+            'comments': [self._make_comment()]
+        }, {
+            'id': 1,
+            'comments': [self._make_comment()]
+        }]
+        resp = self._call_darwin('user', data, '4*like_score')
+        expected = {
+            'results': [16.450686105054196, 16.450686105054196]
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        self.assertEqual(resp_json, expected)
+
+    def test_darwin_comment_domain(self):
+        data = [
+            self._make_comment(),
+            self._make_comment()
+        ]
+        resp = self._call_darwin('comment', data, '4*diversity_score')
+        expected = {
+            'results': [0.5414014486863351, 0.5414014486863351]
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        self.assertEqual(resp_json, expected)
+
+    def test_darwin_asset_domain(self):
+        data = [{
+            'id': 0,
+            'threads': [
+                self._make_comment(n_replies=2, depth=2),
+                self._make_comment(n_replies=2, depth=2)
+            ]
+        }, {
+            'id': 1,
+            'threads': [
+                self._make_comment(n_replies=2, depth=2),
+                self._make_comment(n_replies=2, depth=2)
+            ]
+        }]
+        resp = self._call_darwin('asset', data, '4*diversity_score+discussion_score')
+        expected = {
+            'results': [8.490419077674748, 8.490419077674748]
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        self.assertEqual(resp_json, expected)
+
+    def test_darwin_invalid_domain(self):
+        resp = self.client.post('/darwin/foobar')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_darwin_invalid_expr(self):
+        data = [{
+            'id': 0,
+            'comments': [self._make_comment()]
+        }, {
+            'id': 1,
+            'comments': [self._make_comment()]
+        }]
+        resp = self._call_darwin('user', data, '4*malicious()')
+        self.assertEqual(resp.status_code, 400)
