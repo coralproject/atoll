@@ -6,6 +6,12 @@ To deploy the Coral Atoll instance:
 
     ./deploy.sh
 
+After deploying, check the service is working correctly:
+
+    python test.py
+
+---
+
 **NOTE**: There are some issues with Ansible 1.9.4 and Docker >= 1.8.3.
 
 In particular, the Docker API changed between Docker 1.8.2 and Docker 1.8.3.
