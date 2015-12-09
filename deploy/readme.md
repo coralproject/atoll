@@ -28,4 +28,6 @@ Also, `docker-py` must be at version 1.2.3 to avoid the error:
 
     Docker API Error: client is newer than server (client API version: 1.21, server API version: 1.20)
 
+Note that this is already handled by the playbooks.
+
 Refer to <https://github.com/ansible/ansible-docker-base/issues/19>.
