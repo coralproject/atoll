@@ -1,0 +1,10 @@
+- hosts: all
+  sudo: yes
+  remote_user: '{{ remote_user }}'
+  vars:
+      app_name: darwin
+      wsgi_filename: darwin
+  roles:
+    - role: angstwad.docker_ubuntu
+      pip_version_docker_py: 1.2.3 # fix for <https://github.com/ansible/ansible-docker-base/issues/19>
+    - common

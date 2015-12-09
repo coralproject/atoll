@@ -59,19 +59,10 @@ def evaluate():
     )
 
 
-
-# mock database -----------------------------
-import json
-with open('example_users.json', 'r') as f:
-    data = json.load(f)
-users = {d[0]['user_id']: d for d in data}
-print('ids:', users.keys())
-
 # mock data endpoint
 @bp.route('/data')
 def data():
     id = int(request.args['id'])
-    return jsonify(user={
-        'id': id,
-        'comments': users[id]
-    })
+    # TODO get user by id
+    # for now, reutrn nothing
+    return jsonify(results={})

@@ -1,0 +1,111 @@
+- name: install pycurl (needed by Ansible)
+  apt: pkg=python-pycurl state=installed
+
+- name: add ansible repository
+  apt_repository: repo=ppa:ansible/ansible
+
+- name: ensure apt cache is up to date
+  apt: update_cache=yes
+
+- name: install dependencies (system)
+  apt: pkg={{ item }} state=installed
+  with_items:
+      - ansible
+      - git
+      - python3.4
+      - python3-pip
+      - nginx
+      - uwsgi
+      - uwsgi-plugin-python3
+      - supervisor
+
+- name: copy git private ssh key
+  copy: src=keys/git_id_rsa dest=~/.ssh/id_rsa mode=0600
+
+- name: copy git public ssh key
+  copy: src=keys/git_id_rsa.pub dest=~/.ssh/id_rsa.pub mode=0644
+
+- name: clone git repository
+  git: repo={{ git_repo }} dest={{ app_path }} force=yes accept_hostkey=yes version=deployment
+
+- name: set ownership of app directory
+  file: path={{ app_path }} group=www-data owner=www-data recurse=yes
+
+- name: install dependencies (pip)
+  pip: name={{ item }} executable=pip3
+  with_items:
+      - virtualenv
+      - cython
+
+- name: install scipy dependencies
+  command: sudo apt-get -y build-dep python3-scipy
+
+- name: Create virtualenv and install dependencies (app)
+  pip: requirements={{ app_path }}/requirements.txt virtualenv={{ venv_path }} virtualenv_command=virtualenv-3.4 virtualenv_site_packages=no
+
+- name: rabbitmq docker container
+  docker:
+      name: atoll-rabbitmq
+      image: rabbitmq:3-management
+      state: reloaded
+      pull: missing
+      ports:
+        - '8080:15672'
+        - '5672:5672'
+
+- name: celery worker docker container
+  docker:
+      name: atoll-celery0
+      image: celery:latest
+      state: reloaded
+      pull: missing
+      links:
+        - 'atoll-rabbitmq:rabbit'
+      volumes:
+        - '{{ app_path }}:/home/user'
+
+- name: copy config
+  template: src=config.yml dest={{ config_path }} mode=0644
+
+- name: remove default nginx site
+  file: path=/etc/nginx/sites-enabled/default state=absent
+
+- name: copy nginx config
+  template: src=nginx.conf dest=/etc/nginx/sites-available/{{ app_name }}.conf
+  notify: restart nginx
+
+- name: enable nginx config (symlink)
+  file: src=/etc/nginx/sites-available/{{ app_name }}.conf dest=/etc/nginx/sites-enabled/{{ app_name }}.conf state=link
+
+- name: copy uwsgi config
+  template: src=uwsgi.ini  dest=/etc/uwsgi/apps-available/{{ app_name }}.ini
+  notify: restart app
+
+- name: enable uwsgi config (symlink)
+  file: src=/etc/uwsgi/apps-available/{{ app_name }}.ini dest=/etc/uwsgi/apps-enabled/{{ app_name }}.ini state=link
+
+- name: disable uwsgi # supervisor will manage it.
+  service: name=uwsgi state=stopped enabled=no
+
+- name: create supervisord config folder
+  file: dest=/etc/supervisor state=directory owner=root
+
+- name: copy supervisor program config
+  template: src=supervisor.conf dest=/etc/supervisor/conf.d/{{ app_name }}.conf
+  register: supervisor_conf
+  notify: restart app
+
+- shell: supervisorctl reread
+  when: supervisor_conf.changed
+
+- shell: supervisorctl update
+  when: supervisor_conf.changed
+
+- name: ensure supervisor is running
+  service: name=supervisor state=started enabled=yes
+
+- name: ensure nginx is running
+  service: name=nginx enabled=yes state=started
+
+- name: ensure app is running
+  supervisorctl: name={{ app_name }} state=restarted
