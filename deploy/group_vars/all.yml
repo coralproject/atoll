@@ -1,4 +1,4 @@
-git_repo: https://github.com/coralproject/atoll.git
+git_repo: git@github.com:CoralProject/atoll.git
 venv_path: /var/env/atoll
 app_path: /var/www/atoll
 remote_user: ubuntu

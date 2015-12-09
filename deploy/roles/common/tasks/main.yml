@@ -19,14 +19,14 @@
       - uwsgi-plugin-python3
       - supervisor
 
-- name: copy git ssh keys
-  copy: src=keys/git_{{ item }} dest=~/.ssh/{{ item }}
-  with_items:
-    - id_rsa
-    - id_rsa.pub
+- name: copy git private ssh key
+  copy: src=keys/git_id_rsa dest=~/.ssh/id_rsa mode=0600
+
+- name: copy git public ssh key
+  copy: src=keys/git_id_rsa.pub dest=~/.ssh/id_rsa.pub mode=0644
 
 - name: clone git repository
-  git: repo={{ git_repo }} dest={{ app_path }} force=yes accept_hostkey=yes
+  git: repo={{ git_repo }} dest={{ app_path }} force=yes accept_hostkey=yes version=deployment
 
 - name: set ownership of app directory
   file: path={{ app_path }} group=www-data owner=www-data recurse=yes
