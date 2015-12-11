@@ -88,6 +88,22 @@ results = pipeline(input, distributed=True)
 
 This support is still being worked on; it currently only supports Mesos clusters.
 
+## Deployment
+
+To deploy, clone this repo then `cd` into `deploy`.
+
+First, run `setup.sh` to setup your local machine for deployment.
+
+Then setup the git ssh keys and server key in the `deploy/keys` folder (ask me for them if necessary).
+
+You may need to edit `hosts.ini` to point to the proper servers.
+
+Then you should be able to run `deploy.sh <ENV NAME>` to deploy the Coral Atoll instance, where `ENV NAME` is one of `[development production]`.
+
+Once you deploy, you can run `test.py` to sanity-check that the service is working properly.
+
+See `deploy/readme.md` for more info.
+
 ---
 
 ## Notes
