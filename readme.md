@@ -98,7 +98,7 @@ Then setup the git ssh keys and server key in the `deploy/keys` folder (ask me f
 
 You may need to edit `hosts.ini` to point to the proper servers.
 
-Then you should be able to run `deploy.sh` to deploy the Coral Atoll instance.
+Then you should be able to run `deploy.sh <ENV NAME>` to deploy the Coral Atoll instance, where `ENV NAME` is one of `[development production]`.
 
 Once you deploy, you can run `test.py` to sanity-check that the service is working properly.
 

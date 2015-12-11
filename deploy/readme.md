@@ -4,7 +4,9 @@ Setup local dependencies:
 
 To deploy the Coral Atoll instance:
 
-    ./deploy.sh
+    ./deploy.sh <ENV NAME>
+
+Where `ENV NAME` is one of `[development, production]`.
 
 After deploying, check the service is working correctly:
 
