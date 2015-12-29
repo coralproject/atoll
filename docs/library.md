@@ -5,7 +5,8 @@ This document contains a set of pipelines.  Each pipeline is designed to calcula
 Pipeline template:
 
 ```
-Name: 
+Name: "..."
+
 Ordinary Descripiton: "..."
 
 Technical Description (optional): "..."
