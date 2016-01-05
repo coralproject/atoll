@@ -16,7 +16,8 @@ def composition(f):
     """decorates a function which builds the pipeline,
     i.e. a function that adds a new pipe"""
     def decorated(self, func, *args, **kwargs):
-        assert ((not isinstance(func, type)) and callable(func)) or func is None, 'Pipes must be callable'
+        assert ((not isinstance(func, type)) and callable(func)) or func is None, \
+            'Pipes must be callable'
 
         if isinstance(func, Pipeline):
             pipe = func
@@ -32,7 +33,8 @@ def branching(f):
     """decorates a branching composition function"""
     def decorated(self, *funcs):
         for func in funcs:
-            assert func is None or isinstance(func, Pipeline), 'Fork branches must be pipelines'
+            assert ((not isinstance(func, type)) and callable(func)) or func is None, \
+                'Fork branches must be callable'
         branches = f(self, funcs)
         self.expected_kwargs += branches.expected_kwargs
         self.pipes.append((f.__name__, branches))
@@ -54,7 +56,7 @@ def prep_func(pipe, **kwargs):
                 kwargs_[key] = kwargs[key]
             except KeyError:
                 raise KeyError('Missing expected keyword argument: {}'.format(key))
-        return partial(pipe.func, **kwargs_)
+        return partial(pipe._func, **kwargs_)
 
 def kv_func(f, k, v):
     """helper to apply function `f` to value `v`"""
@@ -74,7 +76,7 @@ class Pipeline(Pipe):
         self.expected_kwargs = []
         self.pipes = []
 
-    def func(self, input, distributed=False, **kwargs):
+    def _func(self, input, distributed=False, **kwargs):
         """
         Used if the pipeline is nested in another.
         This prevents nested pipelines from running their own parallel processes.
@@ -211,7 +213,12 @@ class Pipeline(Pipe):
     @branching
     def fork(self, funcs):
         """copy input for each func in `funcs`"""
-        return Branches(funcs)
+        return Branches(funcs, default='to')
+
+    @branching
+    def forkMap(self, funcs):
+        """like fork, but assumes bare functions are to be mapped"""
+        return Branches(funcs, default='map')
 
     # execution methods just take care of execution of the pipes
     # produced by the above composition/branching methods
@@ -278,6 +285,10 @@ class Pipeline(Pipe):
     def _fork(self, funcs, input):
         return tuple(self.executor(self.funcproc(func)(input) for func in funcs))
 
+    @execution
+    def _forkMap(self, funcs, input):
+        return tuple(self.executor(self.funcproc(func)(input) for func in funcs))
+
     def _serial(self, stream):
         return list(stream)
 
@@ -286,3 +297,12 @@ class Pipeline(Pipe):
 
     def __s(self, func):
         return func
+
+    @classmethod
+    def operators(cls):
+        """returns a list of valid operators"""
+        return [k for k, v in cls.__dict__.items()
+                if not k.startswith('_')
+                and not isinstance(v, property)
+                and ('composition.<locals>.decorated' in str(v)
+                    or 'branching.<locals>.decorated' in str(v))]

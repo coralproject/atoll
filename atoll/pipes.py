@@ -1,4 +1,5 @@
 from functools import partial
+import atoll.pipeline
 from atoll.friendly import name, signature
 
 
@@ -19,21 +20,36 @@ class Pipe(object):
 
         # prep the pipe's function
         if args or kwargs:
-            self.func = partial(func, *args, **kwargs)
+            self._func = partial(func, *args, **kwargs)
         else:
-            self.func = func
+            self._func = func
 
     def __repr__(self):
         return self.name
 
 
 class Branches(object):
-    def __init__(self, branches):
+    def __init__(self, branches, default='to'):
         """
-        Branches must either be pipelines or None,
-        which represents an identity pipeline.
+        Branches must either be pipelines, functions,
+        or None, which represents an identity pipeline.
+
+        The `default` kwarg defines which operator to use
+        for connecting functions.
         """
-        self.branches = [b if b is not None else Pipe(b) for b in branches]
+        assert (default in atoll.pipeline.Pipeline.operators()), \
+            '"{}" is not a valid pipeline operator'.format(default)
+
+        self.branches = []
+        for b in branches:
+            if b is None:
+                branch = Pipe(b)
+            elif isinstance(b, atoll.pipeline.Pipeline):
+                branch = b
+            else:
+                branch = getattr(atoll.pipeline.Pipeline(), default)(b)
+            self.branches.append(branch)
+
         self.name = '|'.join([str(b) for b in self.branches])
         self.sig = [str(b.sig) for b in self.branches]
         self.expected_kwargs = sum([b.expected_kwargs for b in self.branches], [])

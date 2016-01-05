@@ -14,6 +14,9 @@ def c(input):
 def d(input1, input2):
     return [sum([i1,i2]) for i1,i2 in zip(input1,input2)]
 
+def double(input):
+    return 2*input
+
 
 class BranchingPipelineTests(unittest.TestCase):
     def test_fork_branching_pipeline(self):
@@ -38,3 +41,14 @@ class BranchingPipelineTests(unittest.TestCase):
             [5,6,7,8],
             [2,3,4,5],
         ))
+
+    def test_fork_default_operator(self):
+        # default operator is "to"
+        p = Pipeline().to(a).fork(b, c)
+        out = p([1,2,3,4])
+        self.assertEqual(out, ([4,5,6,7], [5,6,7,8]))
+
+    def test_fork_map(self):
+        p = Pipeline().forkMap(double, double)
+        out = p([1,2,3,4])
+        self.assertEqual(out, ([2,4,6,8], [2,4,6,8]))

@@ -95,7 +95,9 @@ Then define pipelines for the other tasks:
 
 The ``fork`` method duplicates inputs across the specified pipelines while avoiding redundant computation. For instance, in the example above, the ``common`` pipeline is executed only once.
 
-Note that you can only branch to other pipelines.
+Forking supports identity pipes (passed in as ``None``), pipelines, and (non-pipeline) callables. If a non-pipeline callable (e.g. a function) is used, it will be connected using the default ``to`` operator.
+
+The ``forkMap`` method does the same as the ``fork`` method, except the default operator used for non-pipeline callables is ``map``.
 
 We can also ``reduce`` the results of branching pipelines if we want:
 
