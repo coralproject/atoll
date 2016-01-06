@@ -52,7 +52,7 @@ __Output__:
     'like_score': float,
     'starred_score': float,
     'moderated_prob': float
-}]
+}, ...]
 ```
 
 ### Metrics
@@ -120,7 +120,7 @@ __Output__:
 [{
     'id': int,
     'diversity_score': float
-}]
+}, ...]
 ```
 
 ### Metrics
@@ -164,7 +164,7 @@ __Output__:
     'id': int,
     'discussion_score': float,
     'diversity_score': float
-}]
+}, ...]
 ```
 
 ### Metrics
