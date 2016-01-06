@@ -180,7 +180,7 @@ __Range__: `[0, 1]`, more is better
 #### Discussion score
 
 __Description__: estimates the length of a new thread started for this asset.
-j
+
 __Technical Description__: The diversity score is computed using a Gamma-Poisson model based on the length of the threads for this asset so far. The prior is parameterized with `shape=1, scale=2`.
 
 __Range__: `[0, +infinity)`, more is better
