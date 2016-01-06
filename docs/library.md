@@ -57,7 +57,7 @@ __Output__:
 
 ### Metrics
 
-__Name__: Discussion score
+#### Discussion score
 
 __Description__: estimated number of replies a comment by this user will receive. Provides a sense of how much discussion this user tends to generate, without regard to what kind of discussion
 
@@ -66,7 +66,7 @@ __Technical Description__: The discussion score is computed using a Gamma-Poisso
 __Range__: `[0, +infinity)`, more is better
 
 
-__Name__: Moderation probability
+#### Moderation probability
 
 __Description__: estimated probability that a comment by this user will be moderated.
 
@@ -75,7 +75,7 @@ __Technical Description__: The moderated probability is computed using a Beta-Bi
 __Range__: `[0, 1]`, less is better
 
 
-__Name__: Community approval
+#### Community approval
 
 __Description__: estimated number of likes a comment by this user will receive. Provides a sense of community approval.
 
@@ -84,7 +84,7 @@ __Technical Description__: The like score is computed using a Gamma-Poisson mode
 __Range__: `[0, +infinity)`, more is better
 
 
-__Name__: Organizational approval
+#### Organizational approval
 
 __Description__: estimated probability that a comment by this user will be "starred" (i.e. be chosen as an "editor's pick"). Provides a sense of organizational approval.
 
@@ -125,7 +125,7 @@ __Output__:
 
 ### Metrics
 
-__Name__: Diversity score
+#### Diversity score
 
 __Description__: estimates the probability that a new reply to this comment would be posted from a new replier.
 
@@ -169,7 +169,7 @@ __Output__:
 
 ### Metrics
 
-__Name__: Diversity score
+#### Diversity score
 
 __Description__: estimates the probability that a new reply to this asset would be posted from a new replier.
 
@@ -177,8 +177,7 @@ __Technical Description__: The diversity score is computed using a Beta-Binomial
 
 __Range__: `[0, 1]`, more is better
 
-
-__Name__: Discussion score
+#### Discussion score
 
 __Description__: estimates the length of a new thread started for this asset.
 j
