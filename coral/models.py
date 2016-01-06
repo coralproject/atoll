@@ -1,12 +1,24 @@
 import math
-from datetime import datetime
+from dateutil.parser import parse
 from collections import defaultdict
+
+
+class ModelValidationException(Exception):
+    pass
 
 
 class Base():
     def __init__(self, **kwargs):
         for k in self.attrs:
+            # self.__validate(k, kwargs[k])
             setattr(self, k, kwargs[k])
+
+    @classmethod
+    def __validate(cls, attr, value):
+        typ = cls.attrs[attr]
+        if not isinstance(value, typ):
+            raise ModelValidationException(
+                '{} must be of type {}, not {}.'.format(attr, typ, type(value)))
 
 
 class User(Base):
@@ -18,15 +30,13 @@ class User(Base):
 
 
 class Comment(Base):
-    attrs = ['id', 'parent_id', 'replies', 'n_replies',
+    attrs = ['id', 'parent_id', 'children',
              'likes', 'starred', 'moderated', 'content',
-             'created_at', 'user_id']
+             'date_created', 'user_id']
 
     def __init__(self, **kwargs):
-        if 'n_replies' not in kwargs:
-            kwargs['n_replies']= len(kwargs['replies'])
-        kwargs['replies'] = [Comment(**c) for c in kwargs['replies']]
-        kwargs['created_at'] = datetime.fromtimestamp(kwargs['created_at'])
+        kwargs['children'] = [Comment(**c) for c in kwargs['children']]
+        kwargs['date_created'] = parse(kwargs['date_created'])
         super().__init__(**kwargs)
 
 
@@ -53,7 +63,7 @@ class Asset(Base):
             parents[p_id].append(c)
 
         threads = []
-        for top_level_parent in sorted(parents[self.id], key=lambda p: p.created_at):
+        for top_level_parent in sorted(parents[self.id], key=lambda p: p.date_created):
             threads.append(self._reconstruct_thread(top_level_parent, parents))
         return threads
 
@@ -63,11 +73,11 @@ class Asset(Base):
         thread = {
             'id': id,
             'user_id': comment['user_id'],
-            'replies': []
+            'children': []
         }
-        replies = parents[id]
-        for reply in sorted(replies, key=lambda c: c['created_at']):
-            thread['replies'].append(self._reconstruct_thread(reply, parents))
+        children = parents[id]
+        for reply in sorted(children, key=lambda c: c['date_created']):
+            thread['children'].append(self._reconstruct_thread(reply, parents))
         return thread
 
 

@@ -2,11 +2,6 @@ import numpy as np
 from scipy import stats
 
 
-def merge_dicts(d1, d2):
-    d1.update(d2)
-    return d1
-
-
 def beta_binomial_model(y, n, alpha, beta, quantile):
     # alpha and beta are priors for the beta prior
     # the beta posterior is Beta(y + alpha, n - y + beta)

@@ -1,5 +1,6 @@
 import json
 import unittest
+from datetime import datetime
 from coral import coral
 from atoll.service.tasks import celery
 
@@ -47,8 +48,8 @@ class ServiceTest(unittest.TestCase):
             'moderated': True,
             'parent_id': None,
             'content': 'foo',
-            'created_at': 0,
-            'replies': [self._make_comment(n_replies=n_replies, depth=depth-1) for _ in range(n_replies)]
+            'date_created': datetime.today().isoformat(),
+            'children': [self._make_comment(n_replies=n_replies, depth=depth-1) for _ in range(n_replies)]
         }
 
     def test_users_score(self):
@@ -129,7 +130,7 @@ class ServiceTest(unittest.TestCase):
             'id': 1,
             'comments': [self._make_comment()]
         }]
-        resp = self._call_darwin('user', data, '4*like_score')
+        resp = self._call_darwin('user', data, '4*community_score')
         expected = {
             'results': [16.450686105054196, 16.450686105054196]
         }

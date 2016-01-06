@@ -8,7 +8,7 @@ def make(data):
     return User(**data)
 
 
-def like_score(user, k=1, theta=2):
+def community_score(user, k=1, theta=2):
     """estimated number of likes a comment by this user will get"""
     X = np.array([c.likes for c in user.comments])
     n = len(X)
@@ -19,7 +19,7 @@ def like_score(user, k=1, theta=2):
     return gamma_poission_model(X, n, k, theta, 0.05)
 
 
-def starred_score(user, alpha=2, beta=2):
+def organization_score(user, alpha=2, beta=2):
     """probability that a comment by this user will be an editor's pick"""
     # assume whether or not a comment is starred
     # is drawn from a binomial distribution parameterized by n, p
@@ -32,7 +32,7 @@ def starred_score(user, alpha=2, beta=2):
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
-def moderated_prob(user, alpha=2, beta=2):
+def moderation_prob(user, alpha=2, beta=2):
     """probability that a user's comment will be moderated"""
     y = sum(1 for c in user.comments if c.moderated)
     n = len(user.comments)
@@ -41,6 +41,6 @@ def moderated_prob(user, alpha=2, beta=2):
 
 def discussion_score(user, k=1, theta=2):
     """estimated number of replies a comment by this user will get"""
-    X = np.array([c.n_replies for c in user.comments])
+    X = np.array([len(c.children) for c in user.comments])
     n = len(X)
     return gamma_poission_model(X, n, k, theta, 0.05)
