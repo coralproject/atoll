@@ -227,6 +227,15 @@ class Pipeline(Pipe):
     def _to(self, func, input):
         if not isinstance(input, tuple):
             input = (input,)
+        else:
+            # flatten nested tuples
+            args = []
+            for arg in input:
+                if isinstance(arg, tuple):
+                    args.extend(arg)
+                else:
+                    args.append(arg)
+            input = args
         return func(*input)
 
     @execution

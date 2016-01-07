@@ -35,12 +35,12 @@ class ServiceTest(unittest.TestCase):
                                 }),
                                 headers=headers)
 
-    def _make_comment(self, n_replies=0, depth=1):
+    def _make_comment(self, n_replies=0, depth=1, **kwargs):
         if depth == 0:
             n_replies = 0
 
         self.counter += 1
-        return {
+        data = {
             'id': self.counter,
             'user_id': self.counter,
             'likes': 10,
@@ -51,6 +51,8 @@ class ServiceTest(unittest.TestCase):
             'date_created': datetime.today().isoformat(),
             'children': [self._make_comment(n_replies=n_replies, depth=depth-1) for _ in range(n_replies)]
         }
+        data.update(kwargs)
+        return data
 
     def test_users_score(self):
         data = [{
@@ -91,7 +93,6 @@ class ServiceTest(unittest.TestCase):
             'readability_scores': dict
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
-        print(resp_json)
         for result in resp_json['results']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
@@ -186,3 +187,38 @@ class ServiceTest(unittest.TestCase):
         }]
         resp = self._call_darwin('user', data, '4*malicious()')
         self.assertEqual(resp.status_code, 400)
+
+    def test_train_and_run_comments_model(self):
+        comments = [self._make_comment(moderated=False, content='THIS IS GOOD') for _ in range(50)]
+        comments += [self._make_comment(moderated=True, content='THIS IS MALICIOUS') for _ in range(50)]
+        data = {
+            'comments': comments,
+            'name': 'test_model'
+        }
+
+        # training the model
+        resp = self._call_pipeline('comments/model/train', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected = {
+            'name': str,
+            'notes': list,
+            'performance': dict,
+            'n_samples': int
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for k, v in resp_json['results'].items():
+            self.assertTrue(isinstance(v, expected[k]))
+
+        # running the model
+        resp = self._call_pipeline('comments/model/run', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected = {
+            'id': int,
+            'moderation_prob': float
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for result in resp_json['results']:
+            for k, t in expected.items():
+                self.assertTrue(isinstance(result[k], t))
