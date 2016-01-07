@@ -47,7 +47,7 @@ class ServiceTest(unittest.TestCase):
             'starred': False,
             'moderated': True,
             'parent_id': None,
-            'content': 'foo',
+            'content': 'Ours is a world in vertigo. It is a world that swarms with technological mediation, interlacing our daily lives with abstraction, virtuality, and complexity. XF constructs a feminism adapted to these realities: a feminism of unprecedented cunning, scale, and vision; a future in which the realization of gender justice and feminist emancipation contribute to a universalist politics assembled from the needs of every human, cutting across race, ability, economic standing, and geographical position.  No more futureless repetition on the treadmill of capital, no more submission to the drudgery of labour, productive and reproductive alike, no more reification of the given masked as critique.  Our future requires depetrification.  XF is not a bid for revolution, but a wager on the long game of history, demanding imagination, dexterity and persistence. ',
             'date_created': datetime.today().isoformat(),
             'children': [self._make_comment(n_replies=n_replies, depth=depth-1) for _ in range(n_replies)]
         }
@@ -88,8 +88,10 @@ class ServiceTest(unittest.TestCase):
         expected = {
             'id': int,
             'diversity_score': float,
+            'readability_scores': dict
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
+        print(resp_json)
         for result in resp_json['results']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
