@@ -12,8 +12,8 @@ mets = ['roc_auc_score', 'f1_score', 'log_loss', 'precision_score', 'recall_scor
 
 
 def models_dir():
-    # TODO put in a better location?
-    models_path = os.path.expanduser('~/.atoll/models')
+    dir = os.path.dirname(__file__)
+    models_path = os.path.expanduser(os.path.join(dir, 'models'))
     if not os.path.isdir(models_path):
         os.makedirs(models_path)
     return models_path
