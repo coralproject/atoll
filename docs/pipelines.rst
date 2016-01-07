@@ -31,6 +31,7 @@ Pipelines are intended for working on collections, so most of the operators have
 
 - ``map``
 - ``mapValues``
+- ``forkMap``
 - ``flatMap``
 - ``flatMapValues``
 - ``reduce``
