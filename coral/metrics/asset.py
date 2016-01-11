@@ -34,31 +34,31 @@ def diversity_score(asset, alpha=2, beta=2):
 
 def max_thread_depth(thread):
     """compute the length deepest branch of the thread"""
-    if not thread.replies:
+    if not thread.children:
         return 1
-    return 1 + max([max_thread_depth(reply) for reply in thread.replies])
+    return 1 + max([max_thread_depth(reply) for reply in thread.children])
 
 
 def max_thread_width(thread):
     """compute the widest breadth of the thread,
     that is the max number of replies a comment in the thread has received"""
-    if not thread.replies:
+    if not thread.children:
         return 0
     return max(
-        max([max_thread_width(reply) for reply in thread.replies]),
-        len(thread.replies)
+        max([max_thread_width(reply) for reply in thread.children]),
+        len(thread.children)
     )
 
 
 def count_replies(thread):
-    return 1 + sum(count_replies(r) for r in thread.replies)
+    return 1 + sum(count_replies(r) for r in thread.children)
 
 
 def unique_participants(thread):
     """count unique participants and number of comments in a thread"""
     users = set([thread.user_id])
-    n_replies = 1 + len(thread.replies)
-    for reply in thread.replies:
+    n_replies = 1 + len(thread.children)
+    for reply in thread.children:
         r_users, r_replies = unique_participants(reply)
         n_replies += r_replies
         users = users | r_users
