@@ -15,7 +15,7 @@ def prep_metrics(module):
     colors = {}
     for f in dir(module):
         func = getattr(module, f)
-        if inspect.isfunction(func) and inspect.getmodule(func) == module:
+        if not f.startswith('_') and inspect.isfunction(func) and inspect.getmodule(func) == module:
             color = '#{:02X}{:02X}{:02X}'.format(
                 random.randint(0,255),
                 random.randint(0,255),

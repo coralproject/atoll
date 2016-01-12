@@ -8,7 +8,16 @@ def make(data):
 
 
 def diversity_score(comment, alpha=2, beta=2):
-    """probability that a new reply would be from a new user"""
+    """
+    description: Probability that a new reply would be from a new user.
+    type: float
+    valid:
+        type: range
+        min: 0
+        max: 1
+        min_inclusive: True
+        max_inclusive: True
+    """
     seen_users = set()
 
     unique_participants = []
