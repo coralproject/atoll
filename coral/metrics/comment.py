@@ -38,8 +38,16 @@ def diversity_score(comment, alpha=2, beta=2):
 
 
 def readability_scores(comment):
-    """computes a variety of readability scores.
-    only supports English at the moment."""
+    """
+    description: A variety of readability scores (limited language support).
+    type: dict
+    valid:
+        type: range
+        min: 0
+        max: null
+        min_inclusive: True
+        max_inclusive: False
+    """
     r = Readability(comment.content)
     return {
         'ari': r.ARI(),
