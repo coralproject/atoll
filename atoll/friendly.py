@@ -45,7 +45,10 @@ def signature(func):
                 raise
 
 
-def get_example(input):
+def get_example(input, depth=0):
+    # stop-gap to avoid too deep recursion
+    if depth > 10: return '...'
+
     """produce an "example" out of some input"""
     if isinstance(input, tuple):
         return '({})'.format(','.join('{}'.format(get_example(i)) for i in input))
@@ -54,7 +57,7 @@ def get_example(input):
         return '{{{}}}'.format(','.join('{}:{}'.format(k, get_example(v)) for k, v in islice(input.items(), 5)))
     if hasattr(input, '__iter__') and not isinstance(input, str):
         example = next(iter(input))
-        return '[{},...]'.format(get_example(example))
+        return '[{},...]'.format(get_example(example, depth + 1))
     else:
         example = input
     return str(example)

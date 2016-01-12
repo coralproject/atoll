@@ -1,5 +1,3 @@
-
-
 def apply_metric(obj, metric):
     """apply a metric to an object.
     returns the object's id with the labeled computed metric"""
