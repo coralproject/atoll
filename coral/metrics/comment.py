@@ -42,11 +42,7 @@ def readability_scores(comment):
     description: A variety of readability scores (limited language support).
     type: dict
     valid:
-        type: range
-        min: 0
-        max: null
-        min_inclusive: True
-        max_inclusive: False
+        type: nonnegative
     """
     r = Readability(comment.content)
     return {
