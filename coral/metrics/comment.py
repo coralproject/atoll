@@ -12,12 +12,7 @@ def diversity_score(comment, alpha=2, beta=2):
     """
     description: Probability that a new reply would be from a new user.
     type: float
-    valid:
-        type: range
-        min: 0
-        max: 1
-        min_inclusive: True
-        max_inclusive: True
+    valid: probability
     """
     seen_users = set()
 
@@ -41,8 +36,7 @@ def readability_scores(comment):
     """
     description: A variety of readability scores (limited language support).
     type: dict
-    valid:
-        type: nonnegative
+    valid: nonnegative
     """
     r = Readability(comment.content)
     return {
