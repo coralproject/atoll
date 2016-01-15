@@ -23,6 +23,7 @@ def composition(f):
             pipe = func
         else:
             pipe = f(self, func, *args, **kwargs)
+
         self.expected_kwargs += pipe.expected_kwargs
         self.pipes.append((f.__name__, pipe))
         return self
