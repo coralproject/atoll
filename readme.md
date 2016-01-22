@@ -7,17 +7,18 @@
 
 Ensure we have Python 3.4+
 
-If your python environment is pre 3.4+, this will install pyhon3, set up the environment without disrupting your current python install:
+If your python environment is pre 3.4+, this will install python3 (on OSX), set up the environment without disrupting your current python install:
 ```
 brew install python3
 pip3 install virtualenv
 virtualenv -p python3 ~/env/python3 --no-site-packages
 ```
 
-Each time you want to use python3, just 
+Each time you want to use python3, just
 ```
 source env/bin/activate
 ```
+
 ### Installation
 
 Clone this repo somewhere on your system:
