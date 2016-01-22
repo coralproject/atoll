@@ -1,9 +1,49 @@
 # atoll
 ### A microservice for data analysis pipelines
 
-## Installation
+## Quickstart
 
-Install via `pip`:
+### Environment
+
+Ensure we have Python 3
+
+If not, this will install phyhon3, set up the environment without disrupting your current python install:
+```
+brew install python3
+pip3 install virtualenv
+virtualenv -p python3 ~/env/python3 --no-site-packages
+```
+
+Each time you want to use python3, just 
+```
+source env/bin/activate
+```
+### Installation
+
+Clone this repo somewhere on your system:
+```
+cd /where/you/want/it
+git clone https://github.com/coralproject/atoll.git
+pip install -r requirements.txt
+```
+
+### Run
+
+```
+python coral.py
+```
+
+The server will then run on port :5001
+
+You should be able to see the docs here:
+
+```
+http://localhost:5001/doc
+```
+
+### Install via `pip`:
+
+_Note: this does not install coral specific modules. This will only give you the pipeline framework!_
 
     pip install git+https://github.com/coralproject/atoll
 
