@@ -41,7 +41,7 @@
   command: sudo apt-get -y build-dep python3-scipy
 
 - name: Create virtualenv and install dependencies (app)
-  pip: requirements={{ app_path }}/requirements.txt virtualenv={{ venv_path }} virtualenv_command=virtualenv-3.4 virtualenv_site_packages=no
+  pip: requirements={{ app_path }}/requirements.txt virtualenv={{ venv_path }} virtualenv_command=virtualenv virtualenv_site_packages=no virtualenv_python=python3.4
 
 - name: rabbitmq docker container
   docker:

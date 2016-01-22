@@ -1,4 +1,7 @@
+import json
 import requests
+from datetime import datetime
+
 
 data = [{
     'id': 0,
@@ -9,8 +12,8 @@ data = [{
         'likes': 10,
         'starred': False,
         'moderated': True,
-        'replies': [],
-        'created_at': 0,
+        'children': [],
+        'date_created': datetime.today().isoformat(),
         'parent_id': None
     }]
 }, {
@@ -22,8 +25,8 @@ data = [{
         'likes': 20,
         'starred': True,
         'moderated': False,
-        'replies': [],
-        'created_at': 0,
+        'children': [],
+        'date_created': datetime.today().isoformat(),
         'parent_id': None
     }]
 }]
@@ -31,4 +34,4 @@ data = [{
 resp = requests.post('http://10.0.4.21/pipelines/users/score', json={'data':data})
 
 assert resp.status_code == 200
-print(resp.json())
+print(json.dumps(resp.json(), sort_keys=True, indent=2))
