@@ -6,6 +6,24 @@ from .metrics import user, comment, asset
 bp = Blueprint('doc', __name__, url_prefix='/doc')
 
 
+types = {
+    'nonnegative': {
+        'type': 'range',
+        'min': 0,
+        'max': None,
+        'min_inclusive': True,
+        'max_inclusive': False
+    },
+    'probability': {
+        'type': 'range',
+        'min': 0,
+        'max': 1,
+        'min_inclusive': True,
+        'max_inclusive': True
+    }
+}
+
+
 def prep_metrics(module):
     """extract metric functions from a module"""
     metrics = []
@@ -22,7 +40,7 @@ def prep_metrics(module):
                 'name': f,
                 'description': meta.get('description'),
                 'type': meta.get('type'),
-                'valid': meta.get('valid')
+                'valid': types[meta.get('valid')]
             }
             metrics.append(metric)
         else:

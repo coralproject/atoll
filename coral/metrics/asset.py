@@ -12,12 +12,7 @@ def discussion_score(asset, k=1, theta=2):
     """
     description: Estimated number of comments this asset will get.
     type: float
-    valid:
-        type: range
-        min: 0
-        max: null
-        min_inclusive: True
-        max_inclusive: False
+    valid: nonnegative
     """
     X = np.array([_max_thread_width(t) * _max_thread_depth(t) for t in asset.threads])
     n = len(X)
@@ -32,12 +27,7 @@ def diversity_score(asset, alpha=2, beta=2):
     """
     description: Probability that a new reply would be from a new user.
     type: float
-    valid:
-        type: range
-        min: 0
-        max: null
-        min_inclusive: True
-        max_inclusive: False
+    valid: probability
     """
     X = set()
     n = 0
