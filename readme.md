@@ -5,9 +5,9 @@
 
 ### Environment
 
-Ensure we have Python 3
+Ensure we have Python 3.4+
 
-If not, this will install phyhon3, set up the environment without disrupting your current python install:
+If your python environment is pre 3.4+, this will install pyhon3, set up the environment without disrupting your current python install:
 ```
 brew install python3
 pip3 install virtualenv
