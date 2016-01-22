@@ -10,7 +10,9 @@ def make(data):
 
 def diversity_score(comment, alpha=2, beta=2):
     """
-    description: Probability that a new reply would be from a new user.
+    description:
+        en: Probability that a new reply would be from a new user.
+        de: Wahrscheinlichkeit, dass eine neue Antwort würde von einem neuen Benutzer sein.
     type: float
     valid: probability
     """
@@ -34,7 +36,9 @@ def diversity_score(comment, alpha=2, beta=2):
 
 def readability_scores(comment):
     """
-    description: A variety of readability scores (limited language support).
+    description:
+        en: A variety of readability scores (limited language support).
+        de: Eine Vielzahl von Lesbarkeit (begrenzte Sprachunterstützung).
     type: dict
     valid: nonnegative
     """
