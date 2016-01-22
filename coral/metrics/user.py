@@ -10,7 +10,9 @@ def make(data):
 
 def community_score(user, k=1, theta=2):
     """
-    description: Estimated number of likes a comment by this user will get.
+    description:
+        en: Estimated number of likes a comment by this user will get.
+        de: Geschätzte Zahl der Gleichen Kommentar dieses Benutzers erhalten.
     type: float
     valid: nonnegative
     """
@@ -25,7 +27,9 @@ def community_score(user, k=1, theta=2):
 
 def organization_score(user, alpha=2, beta=2):
     """
-    description: Probability that a comment by this user will be an editor's pick.
+    description:
+        en: Probability that a comment by this user will be an editor's pick.
+        de: Wahrscheinlichkeit, dass ein Kommentar dieses Benutzers holen eines Editors können.
     type: float
     valid: probability
     """
@@ -42,7 +46,9 @@ def organization_score(user, alpha=2, beta=2):
 
 def moderation_prob(user, alpha=2, beta=2):
     """
-    description: Probability that one of this user's comments will be moderated.
+    description:
+        en: Probability that one of this user's comments will be moderated.
+        de: Wahrscheinlichkeit, dass eine der Kommentare des Nutzers, moderiert wird.
     type: float
     valid: probability
     """
@@ -53,7 +59,9 @@ def moderation_prob(user, alpha=2, beta=2):
 
 def discussion_score(user, k=1, theta=2):
     """
-    description: Estimated number of replies a comment by this user will get.
+    description:
+        en: Estimated number of replies a comment by this user will get.
+        de: Geschätzte Zahl der Antworten Kommentar dieses Benutzers erhalten.
     type: float
     valid: nonnegative
     """
@@ -64,7 +72,9 @@ def discussion_score(user, k=1, theta=2):
 
 def mean_likes_per_comment(user):
     """
-    description: Mean likes per comment.
+    description:
+        en: Mean likes per comment.
+        de: Durchschnitts Gleichen pro Kommentar.
     type: float
     valid: nonnegative
     """
@@ -73,7 +83,9 @@ def mean_likes_per_comment(user):
 
 def mean_replies_per_comment(user):
     """
-    description: Mean replies per comment.
+    description:
+        en: Mean replies per comment.
+        de: Durchschnitts Antworten per Kommentar.
     type: float
     valid: nonnegative
     """
@@ -82,7 +94,9 @@ def mean_replies_per_comment(user):
 
 def percent_replies(user):
     """
-    description: Percent of comments that are replies.
+    description:
+        en: Percent of comments that are replies.
+        de: Prozent der Kommentare, die Antworten gibt.
     type: float
     valid: probability
     """
@@ -91,7 +105,9 @@ def percent_replies(user):
 
 def mean_words_per_comment(user):
     """
-    description: Mean words per comment.
+    description:
+        en: Mean words per comment.
+        de: Durchschnitts Wörter pro Kommentar.
     type: float
     valid: nonnegative
     """
