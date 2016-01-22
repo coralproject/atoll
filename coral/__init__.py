@@ -16,7 +16,11 @@ score_users = Pipeline(name='score_users').map(user.make)\
 coral.register_pipeline('/users/score', score_users)
 
 score_comments = Pipeline(name='score_comments').map(comment.make)\
-    .map(partial(apply_metric, metric=comment.diversity_score)).map(assign_id)
+    .forkMap(
+        partial(apply_metric, metric=comment.diversity_score),
+        partial(apply_metric, metric=comment.readability_scores)
+    ).flatMap()\
+    .reduceByKey(merge_dicts).map(assign_id)
 coral.register_pipeline('/comments/score', score_comments)
 
 score_assets = Pipeline(name='score_assets').map(asset.make)\

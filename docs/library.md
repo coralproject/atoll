@@ -133,6 +133,108 @@ __Technical Description__: The diversity score is computed using a Beta-Binomial
 
 __Range__: `[0, 1]`, more is better
 
+#### Readability scores
+
+__Description__: computes several different readability scores for the text of a comment.
+
+##### Automated Readability Index (ARI)
+
+__Description__: estimates the US grade level necessary to read the text.
+
+__Technical Description__: the ARI is computed with the following formula:
+
+    4.71 * (# characters/# words) + 0.5 * (# words/# sentences) - 21.43
+
+__Range__: `[-16.22, +infinity)`, more may be better or not depending on your goals
+
+##### Flesch Reading Ease
+
+__Description__: estimates how difficult a text is to read.
+
+__Technical Description__: the Flesch Reading Ease is computed with the following formula:
+
+    206.835 - 1.015 * (# words/# sentences) - 84.6 * (# syllables/# words)
+
+__Range__: `(-infinity, 121.22]`. From [Wikipedia](https://en.wikipedia.org/wiki/Flesch–Kincaid_readability_tests#Flesch_reading_ease):
+
+| Score      | Interpretation                                      |
+|------------|-----------------------------------------------------|
+| 90.0–100.0 | easily understood by an average 11-year-old student |
+| 60.0–70.0  | easily understood by 13- to 15-year-old students    |
+| 0.0–30.0   | best understood by university graduates             |
+
+##### Flesch-Kincaid Grade Level
+
+__Description__: estimates the US grade level necessary to read the text.
+
+__Technical Description__: The Flesch-Kincaid Grade Level is computed with the following formula:
+
+    0.39 * (# words/# sentences) + 11.8 (# syllables/# words) - 15.59
+
+__Range__: `[-3.4, +infinity)`, more may be better or not depending on your goals
+
+##### Coleman-Liau Index
+
+__Description__: estimates the US grade level necessary to read the text.
+
+__Technical Description__: The Coleman-Liau Index is computed with the following formula:
+
+    0.0588 (avg # letters per 100 words) - 0.296 (avg # sentences per 100 words) - 15.8
+
+__Range__: `[-15.8, +infinity)`, more may be better or not depending on your goals
+
+##### Gunning fog index
+
+__Description__: estimates the years of formal education necessary to read the text.
+
+__Technical Description__: The Gunning fog index is computed with the following formula:
+
+    0.4 * ((# words/# sentences) + 100 (# complex words/# words))
+
+Where a "complex" word is defined as one with three or more syllables, excluding "proper nouns, familiar jargon, or compound words" and not counting "common suffixes" as syllables (see [Wikipedia](https://en.wikipedia.org/wiki/Gunning_fog_index)).
+
+__Range__: `[0.4, +infinity)`, more may be better or not depending on your goals
+
+##### SMOG index
+
+__Description__: estimates the years of formal education necessary to read the text.
+
+__Technical Description__: The SMOG index is computed with the following formula:
+
+    1.0430 * sqrt(# polysyllables * (30/# sentences)) + 3.1291
+
+Where a "polysyllable" is a word with three or more syllables.
+
+__Range__: `[3.1291, +infinity)`, more may be better or not depending on your goals
+
+##### LIX (Laesbarheds Index)
+
+__Description__: estimates the difficulty of a text.
+
+__Technical Description__: The LIX is computed with the following formula:
+
+    (# words/# sentences) + 100 * (# words longer than 6 characters/# words)
+
+__Range__: `[1, +infinity)`, more may be better or not depending on your goals. From [Ideosity](https://www.ideosity.com/readability-tests-and-formulas/#LIX):
+
+| Score | Interpretation |
+|-------|----------------|
+| 0-24  | Very easy      |
+| 25-34 | Easy           |
+| 35-44 | Standard       |
+| 45-54 | Difficult      |
+| 55+   | Very difficult |
+
+##### RIX
+
+__Description__: estimates the difficulty of a text.
+
+__Technical Description__: The LIX is computed with the following formula:
+
+    # words longer than 6 characters/# sentences
+
+__Range__: `[0, +infinity)`, more may be better or not depending on your goals. A score of 7.2 or above is interpreted as college-level, 0.2 or below is interpreted as US grade 1.
+
 ## Assets pipeline
 
 __Endpoint__: `/assets/score`

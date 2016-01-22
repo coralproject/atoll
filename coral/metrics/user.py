@@ -9,7 +9,11 @@ def make(data):
 
 
 def community_score(user, k=1, theta=2):
-    """estimated number of likes a comment by this user will get"""
+    """
+    description: Estimated number of likes a comment by this user will get.
+    type: float
+    valid: nonnegative
+    """
     X = np.array([c.likes for c in user.comments])
     n = len(X)
 
@@ -20,7 +24,11 @@ def community_score(user, k=1, theta=2):
 
 
 def organization_score(user, alpha=2, beta=2):
-    """probability that a comment by this user will be an editor's pick"""
+    """
+    description: Probability that a comment by this user will be an editor's pick.
+    type: float
+    valid: probability
+    """
     # assume whether or not a comment is starred
     # is drawn from a binomial distribution parameterized by n, p
     # n is known, we want to estimate p
@@ -33,14 +41,58 @@ def organization_score(user, alpha=2, beta=2):
 
 
 def moderation_prob(user, alpha=2, beta=2):
-    """probability that a user's comment will be moderated"""
+    """
+    description: Probability that one of this user's comments will be moderated.
+    type: float
+    valid: probability
+    """
     y = sum(1 for c in user.comments if c.moderated)
     n = len(user.comments)
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
 def discussion_score(user, k=1, theta=2):
-    """estimated number of replies a comment by this user will get"""
+    """
+    description: Estimated number of replies a comment by this user will get.
+    type: float
+    valid: nonnegative
+    """
     X = np.array([len(c.children) for c in user.comments])
     n = len(X)
     return gamma_poission_model(X, n, k, theta, 0.05)
+
+
+def mean_likes_per_comment(user):
+    """
+    description: Mean likes per comment.
+    type: float
+    valid: nonnegative
+    """
+    return np.mean([c.likes for c in user.comments])
+
+
+def mean_replies_per_comment(user):
+    """
+    description: Mean replies per comment.
+    type: float
+    valid: nonnegative
+    """
+    return np.mean([len(c.children) for c in user.comments])
+
+
+def percent_replies(user):
+    """
+    description: Percent of comments that are replies.
+    type: float
+    valid: probability
+    """
+    return sum(1 if c.parent_id is not None else 0 for c in user.comments)/len(user.comments)
+
+
+def mean_words_per_comment(user):
+    """
+    description: Mean words per comment.
+    type: float
+    valid: nonnegative
+    """
+    return np.mean([len(c.content.split(' ')) for c in user.comments])

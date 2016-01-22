@@ -1,5 +1,6 @@
 from .common import beta_binomial_model
 from ..models import Comment
+from .readability import Readability
 
 
 def make(data):
@@ -8,7 +9,11 @@ def make(data):
 
 
 def diversity_score(comment, alpha=2, beta=2):
-    """probability that a new reply would be from a new user"""
+    """
+    description: Probability that a new reply would be from a new user.
+    type: float
+    valid: probability
+    """
     seen_users = set()
 
     unique_participants = []
@@ -25,3 +30,25 @@ def diversity_score(comment, alpha=2, beta=2):
     # again, to be conservative, we take the lower-bound
     # of the 90% credible interval (the 0.05 quantile)
     return beta_binomial_model(y, n, alpha, beta, 0.05)
+
+
+def readability_scores(comment):
+    """
+    description: A variety of readability scores (limited language support).
+    type: dict
+    valid: nonnegative
+    """
+    r = Readability(comment.content)
+    return {
+        'ari': r.ARI(),
+        'flesch_reading_ease': r.FleschReadingEase(),
+        'flesch_kincaid_grade_level': r.FleschKincaidGradeLevel(),
+        'gunning_fog_index': r.GunningFogIndex(),
+        'smog_index': r.SMOGIndex(),
+        'coleman_liau_index': r.ColemanLiauIndex(),
+        'lix': r.LIX(),
+        'rix': r.RIX()
+    }
+
+
+
