@@ -37,27 +37,6 @@
 - name: Create virtualenv and install dependencies (app)
   pip: requirements={{ app_path }}/requirements.txt virtualenv={{ venv_path }} virtualenv_command=virtualenv virtualenv_site_packages=no virtualenv_python=python3.4
 
-- name: rabbitmq docker container
-  docker:
-      name: atoll-rabbitmq
-      image: rabbitmq:3-management
-      state: reloaded
-      pull: missing
-      ports:
-        - '8080:15672'
-        - '5672:5672'
-
-- name: celery worker docker container
-  docker:
-      name: atoll-celery0
-      image: celery:latest
-      state: reloaded
-      pull: missing
-      links:
-        - 'atoll-rabbitmq:rabbit'
-      volumes:
-        - '{{ app_path }}:/home/user'
-
 - name: add user to webserver group
   user: name={{ remote_user }} append=yes groups={{ web_group }}
 

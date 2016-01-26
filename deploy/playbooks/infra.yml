@@ -1,0 +1,28 @@
+- hosts: '{{ env }}'
+  sudo: yes
+  remote_user: '{{ remote_user }}'
+  vars:
+      app_name: coral
+  roles:
+    - role: angstwad.docker_ubuntu
+      pip_version_docker_py: 1.2.3 # fix for <https://github.com/ansible/ansible-docker-base/issues/19>
+  tasks:
+    - name: rabbitmq docker container
+      docker:
+          name: atoll-rabbitmq
+          image: rabbitmq:3-management
+          state: reloaded
+          pull: missing
+          ports:
+            - '8080:15672'
+            - '5672:5672'
+    - name: celery worker docker container
+      docker:
+          name: atoll-celery0
+          image: celery:latest
+          state: reloaded
+          pull: missing
+          links:
+            - 'atoll-rabbitmq:rabbit'
+          volumes:
+            - '{{ app_path }}:/home/user'

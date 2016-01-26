@@ -12,4 +12,4 @@ export ANSIBLE_SQUASH_ACTIONS="pkgng"
 ansible-playbook -i hosts.ini playbooks/coral.yml -e "env=${DEPLOY_ENV}" #-vvvv
 
 # deploy darwin (composer) instance
-ansible-playbook -i hosts.ini playbooks/darwin.yml -e "env=${DEPLOY_ENV}" #-vvvv
+#ansible-playbook -i hosts.ini playbooks/darwin.yml -e "env=${DEPLOY_ENV}" #-vvvv
