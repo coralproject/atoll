@@ -16,7 +16,7 @@ ENV ANSIBLE_SQUASH_ACTIONS "pkgng"
 
 # self-provision
 RUN git clone -b docker https://github.com/coralproject/atoll /tmp/atoll
-RUN ansible-playbook -i "localhost," -c local /tmp/atoll/deploy/playbooks/coral.yml
+RUN ansible-playbook -i /tmp/atoll/deploy/hosts.ini /tmp/atoll/deploy/playbooks/coral.yml -e "env=docker"
 
 # expose ports, 22->ssh, 80->atoll
 EXPOSE 22 80
