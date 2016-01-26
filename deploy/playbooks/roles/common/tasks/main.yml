@@ -74,14 +74,14 @@
   register: supervisor_conf
   notify: restart app
 
+- name: ensure supervisor is running
+  service: name=supervisor state=started enabled=yes
+
 - shell: supervisorctl reread
   when: supervisor_conf.changed
 
 - shell: supervisorctl update
   when: supervisor_conf.changed
-
-- name: ensure supervisor is running
-  service: name=supervisor state=started enabled=yes
 
 - name: ensure nginx is running
   service: name=nginx enabled=yes state=started
