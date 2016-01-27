@@ -56,6 +56,12 @@
 - name: enable nginx config (symlink)
   file: src=/etc/nginx/sites-available/{{ app_name }}.conf dest=/etc/nginx/sites-enabled/{{ app_name }}.conf state=link
 
+- name: copy ssl cert
+  copy: src=ssl/cert.crt dest=/etc/nginx/ssl-bundle.crt
+
+- name: copy ssl key
+  copy: src=ssl/cert.key dest=/etc/nginx/cert.key
+
 - name: copy uwsgi config
   template: src=uwsgi.ini  dest=/etc/uwsgi/apps-available/{{ app_name }}.ini group={{ web_group }} owner={{ web_group }}
   notify: restart app
