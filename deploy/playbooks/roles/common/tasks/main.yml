@@ -57,7 +57,7 @@
   file: src=/etc/nginx/sites-available/{{ app_name }}.conf dest=/etc/nginx/sites-enabled/{{ app_name }}.conf state=link
 
 - name: copy ssl cert
-  copy: src=ssl/cert.crt dest=/etc/nginx/ssl-bundle.cert
+  copy: src=ssl/cert.crt dest=/etc/nginx/ssl-bundle.crt
 
 - name: copy ssl key
   copy: src=ssl/cert.key dest=/etc/nginx/cert.key

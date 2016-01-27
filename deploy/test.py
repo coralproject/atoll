@@ -1,6 +1,9 @@
+import sys
 import json
 import requests
 from datetime import datetime
+
+host = sys.argv[1]
 
 
 data = [{
@@ -31,7 +34,8 @@ data = [{
     }]
 }]
 
-resp = requests.post('http://10.0.4.21/pipelines/users/score', json={'data':data})
+# if using a self-signed cert, set verify=False. otherwise, it should be verify=True
+resp = requests.post('https://{}/pipelines/users/score'.format(host), json={'data':data}, verify=False)
 
 assert resp.status_code == 200
 print(json.dumps(resp.json(), sort_keys=True, indent=2))
