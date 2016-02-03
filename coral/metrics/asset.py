@@ -10,7 +10,9 @@ def make(data):
 
 def discussion_score(asset, k=1, theta=2):
     """
-    description: Estimated number of comments this asset will get.
+    description:
+        en: Estimated number of comments this asset will get.
+        de: Geschätzte Zahl der Kommentare dieser Vermögenswert erhalten.
     type: float
     valid: nonnegative
     """
@@ -25,7 +27,9 @@ def discussion_score(asset, k=1, theta=2):
 
 def diversity_score(asset, alpha=2, beta=2):
     """
-    description: Probability that a new reply would be from a new user.
+    description:
+        en: Probability that a new reply would be from a new user.
+        de: Wahrscheinlichkeit, dass eine neue Antwort würde von einem neuen Benutzer sein.
     type: float
     valid: probability
     """

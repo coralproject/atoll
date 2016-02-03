@@ -1,4 +1,10 @@
+import sys
+import json
 import requests
+from datetime import datetime
+
+host = sys.argv[1]
+
 
 data = [{
     'id': 0,
@@ -9,8 +15,8 @@ data = [{
         'likes': 10,
         'starred': False,
         'moderated': True,
-        'replies': [],
-        'created_at': 0,
+        'children': [],
+        'date_created': datetime.today().isoformat(),
         'parent_id': None
     }]
 }, {
@@ -22,13 +28,14 @@ data = [{
         'likes': 20,
         'starred': True,
         'moderated': False,
-        'replies': [],
-        'created_at': 0,
+        'children': [],
+        'date_created': datetime.today().isoformat(),
         'parent_id': None
     }]
 }]
 
-resp = requests.post('http://10.0.4.21/pipelines/users/score', json={'data':data})
+# if using a self-signed cert, set verify=False. otherwise, it should be verify=True
+resp = requests.post('https://{}/pipelines/users/score'.format(host), json={'data':data}, verify=False)
 
 assert resp.status_code == 200
-print(resp.json())
+print(json.dumps(resp.json(), sort_keys=True, indent=2))

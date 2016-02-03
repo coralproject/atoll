@@ -19,12 +19,6 @@
       - uwsgi-plugin-python3
       - supervisor
 
-- name: copy git private ssh key
-  copy: src=keys/git_id_rsa dest=~/.ssh/id_rsa mode=0600
-
-- name: copy git public ssh key
-  copy: src=keys/git_id_rsa.pub dest=~/.ssh/id_rsa.pub mode=0644
-
 - name: clone git repository
   git: repo={{ git_repo }} dest={{ app_path }} force=yes accept_hostkey=yes version=deployment
 
@@ -41,28 +35,7 @@
   command: sudo apt-get -y build-dep python3-scipy
 
 - name: Create virtualenv and install dependencies (app)
-  pip: requirements={{ app_path }}/requirements.txt virtualenv={{ venv_path }} virtualenv_command=virtualenv-3.4 virtualenv_site_packages=no
-
-- name: rabbitmq docker container
-  docker:
-      name: atoll-rabbitmq
-      image: rabbitmq:3-management
-      state: reloaded
-      pull: missing
-      ports:
-        - '8080:15672'
-        - '5672:5672'
-
-- name: celery worker docker container
-  docker:
-      name: atoll-celery0
-      image: celery:latest
-      state: reloaded
-      pull: missing
-      links:
-        - 'atoll-rabbitmq:rabbit'
-      volumes:
-        - '{{ app_path }}:/home/user'
+  pip: requirements={{ app_path }}/requirements.txt virtualenv={{ venv_path }} virtualenv_command=virtualenv virtualenv_site_packages=no virtualenv_python=python3.4
 
 - name: add user to webserver group
   user: name={{ remote_user }} append=yes groups={{ web_group }}
@@ -83,6 +56,12 @@
 - name: enable nginx config (symlink)
   file: src=/etc/nginx/sites-available/{{ app_name }}.conf dest=/etc/nginx/sites-enabled/{{ app_name }}.conf state=link
 
+- name: copy ssl cert
+  copy: src=ssl/cert.crt dest=/etc/nginx/ssl-bundle.crt
+
+- name: copy ssl key
+  copy: src=ssl/cert.key dest=/etc/nginx/cert.key
+
 - name: copy uwsgi config
   template: src=uwsgi.ini  dest=/etc/uwsgi/apps-available/{{ app_name }}.ini group={{ web_group }} owner={{ web_group }}
   notify: restart app
@@ -101,14 +80,14 @@
   register: supervisor_conf
   notify: restart app
 
+- name: ensure supervisor is running
+  service: name=supervisor state=started enabled=yes
+
 - shell: supervisorctl reread
   when: supervisor_conf.changed
 
 - shell: supervisorctl update
   when: supervisor_conf.changed
-
-- name: ensure supervisor is running
-  service: name=supervisor state=started enabled=yes
 
 - name: ensure nginx is running
   service: name=nginx enabled=yes state=started
