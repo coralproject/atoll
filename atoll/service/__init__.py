@@ -14,4 +14,10 @@ def create_app(package_name=__name__, static_folder='static', template_folder='t
     # Register blueprints.
     app.register_blueprint(errors.bp)
 
+    if not app.debug:
+        import logging
+        fh = logging.FileHandler('/tmp/atoll.log') # TODO use more sensible location
+        fh.setLevel(logging.WARNING)
+        app.logger.addHandler(fh)
+
     return app
