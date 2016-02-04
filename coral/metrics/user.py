@@ -1,8 +1,8 @@
 import numpy as np
-from .common import gamma_poission_model, beta_binomial_model, required_keys
+from .common import gamma_poission_model, beta_binomial_model, requires_keys
 
 
-@required_keys('comments[].likes')
+@requires_keys('comments[].likes')
 def community_score(user, k=1, theta=2):
     """
     description:
@@ -20,7 +20,7 @@ def community_score(user, k=1, theta=2):
     return gamma_poission_model(X, n, k, theta, 0.05)
 
 
-@required_keys('comments[].starred')
+@requires_keys('comments[].starred')
 def organization_score(user, alpha=2, beta=2):
     """
     description:
@@ -40,7 +40,7 @@ def organization_score(user, alpha=2, beta=2):
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
-@required_keys('comments[].moderated')
+@requires_keys('comments[].moderated')
 def moderation_prob(user, alpha=2, beta=2):
     """
     description:
@@ -54,7 +54,7 @@ def moderation_prob(user, alpha=2, beta=2):
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
-@required_keys('comments[].children')
+@requires_keys('comments[].children')
 def discussion_score(user, k=1, theta=2):
     """
     description:
@@ -68,7 +68,7 @@ def discussion_score(user, k=1, theta=2):
     return gamma_poission_model(X, n, k, theta, 0.05)
 
 
-@required_keys('comments[].likes')
+@requires_keys('comments[].likes')
 def mean_likes_per_comment(user):
     """
     description:
@@ -80,7 +80,7 @@ def mean_likes_per_comment(user):
     return np.mean([c.get('likes', 0) for c in user['comments']])
 
 
-@required_keys('comments[].children')
+@requires_keys('comments[].children')
 def mean_replies_per_comment(user):
     """
     description:
@@ -92,7 +92,7 @@ def mean_replies_per_comment(user):
     return np.mean([len(c.get('children', [])) for c in user['comments']])
 
 
-@required_keys('comments[].parent_id')
+@requires_keys('comments[].parent_id')
 def percent_replies(user):
     """
     description:
@@ -104,7 +104,7 @@ def percent_replies(user):
     return sum(1 if c.get('parent_id', '') else 0 for c in user['comments'])/len(user['comments'])
 
 
-@required_keys('comments[].body')
+@requires_keys('comments[].body')
 def mean_words_per_comment(user):
     """
     description:

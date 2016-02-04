@@ -26,7 +26,7 @@ def gamma_poission_model(X, n, k, theta, quantile):
     return stats.gamma.ppf(quantile, k, scale=t)
 
 
-def required_keys(*keys):
+def requires_keys(*keys):
     """before running the decorated function,
     check that all keys are present.
     nested keys can be specified using dot syntax"""

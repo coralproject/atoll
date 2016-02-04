@@ -1,10 +1,10 @@
 import math
 import numpy as np
 from collections import defaultdict
-from .common import beta_binomial_model, gamma_poission_model, required_keys
+from .common import beta_binomial_model, gamma_poission_model, requires_keys
 
 
-@required_keys('threads[].children')
+@requires_keys('threads[].children')
 def discussion_score(asset, k=1, theta=2):
     """
     description:
@@ -22,7 +22,7 @@ def discussion_score(asset, k=1, theta=2):
     return gamma_poission_model(X, n, k, theta, 0.05)
 
 
-@required_keys('threads[].children')
+@requires_keys('threads[].children')
 def diversity_score(asset, alpha=2, beta=2):
     """
     description:

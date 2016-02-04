@@ -1,8 +1,8 @@
 from .readability import Readability
-from .common import beta_binomial_model, required_keys
+from .common import beta_binomial_model, requires_keys
 
 
-@required_keys('children[].user')
+@requires_keys('children[].user')
 def diversity_score(comment, alpha=2, beta=2):
     """
     description:
@@ -28,7 +28,7 @@ def diversity_score(comment, alpha=2, beta=2):
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
-@required_keys('body')
+@requires_keys('body')
 def readability_scores(comment):
     """
     description:
