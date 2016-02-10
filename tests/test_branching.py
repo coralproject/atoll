@@ -52,3 +52,13 @@ class BranchingPipelineTests(unittest.TestCase):
         p = Pipeline().forkMap(double, double)
         out = p([1,2,3,4])
         self.assertEqual(out, ([2,4,6,8], [2,4,6,8]))
+
+    def test_split(self):
+        p = Pipeline().split(double, double)
+        out = p([[1,2], [3,4]])
+        self.assertEqual(out, ([1,2,1,2], [3,4,3,4]))
+
+    def test_split_map(self):
+        p = Pipeline().splitMap(double, double)
+        out = p([[1,2], [3,4]])
+        self.assertEqual(out, ([2,4], [6,8]))
