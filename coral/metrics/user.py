@@ -44,7 +44,7 @@ def organization_score(user, alpha=2, beta=2):
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
-@requires_keys('comments[].moderated')
+@requires_keys('comments[].status')
 def moderation_prob(user, alpha=2, beta=2):
     """
     description:
@@ -53,7 +53,8 @@ def moderation_prob(user, alpha=2, beta=2):
     type: float
     valid: probability
     """
-    y = sum(1 for c in user['comments'] if c.get('moderated', False))
+    # key: 1->unmoderated, 2->accepted, 3->rejected, 4->escalated
+    y = sum(1 for c in user['comments'] if c.get('status', 1) in [3,4])
     n = len(user['comments'])
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
