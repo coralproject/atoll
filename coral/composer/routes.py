@@ -1,6 +1,5 @@
 import random
 import inspect
-from ..models import User
 from ..metrics import user, comment, asset
 from .parser import parse
 from flask import Blueprint, render_template, request, jsonify
@@ -49,7 +48,7 @@ def index():
 def evaluate():
     data = request.get_json()
     expr = data['expr']
-    users = [User(**d) for id, d in data['users'].items()]
+    users = data['users']
 
     results, texes, expr_tex = parse(expr, users, user_metrics, user_colors)
     return jsonify(

@@ -44,9 +44,7 @@ def darwin(domain):
     except ValueError as e:
         return str(e), 400
 
-    # expects that the module's method for coercing the json
-    # into an object is called `make`
-    pipeline = Pipeline().map(mod.make).map(func)
+    pipeline = Pipeline().map(func)
 
     if 'callback' not in data:
         # execute serially because pickle cannot serialize

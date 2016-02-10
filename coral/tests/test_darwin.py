@@ -11,7 +11,7 @@ test_config = {
     'TESTING': True
 }
 
-class ServiceTest(unittest.TestCase):
+class DarwinTest(unittest.TestCase):
     def setUp(self):
         self.app = coral.create_app(**test_config)
         self.client = self.app.test_client()
@@ -20,11 +20,14 @@ class ServiceTest(unittest.TestCase):
     def tearDown(self):
         self.app = None
 
-    def _call_pipeline(self, endpoint, data):
+    def _call_darwin(self, domain, data, expr):
         headers = [('Content-Type', 'application/json')]
-        return self.client.post('/pipelines/{}'.format(endpoint),
-                                 data=json.dumps({'data': data}),
-                                 headers=headers)
+        return self.client.post('/darwin/{}'.format(domain),
+                                data=json.dumps({
+                                    'data': data,
+                                    'expr': expr
+                                }),
+                                headers=headers)
 
     def _make_comment(self, n_replies=0, depth=1):
         if depth == 0:
@@ -32,10 +35,10 @@ class ServiceTest(unittest.TestCase):
 
         self.counter += 1
         return {
-            '_id': self.counter,
+            'id': self.counter,
             'user_id': self.counter,
             'starred': False,
-            'status': 3, # rejected
+            'moderated': True,
             'parent_id': None,
             'body': 'Ours is a world in vertigo. It is a world that swarms with technological mediation, interlacing our daily lives with abstraction, virtuality, and complexity. XF constructs a feminism adapted to these realities: a feminism of unprecedented cunning, scale, and vision; a future in which the realization of gender justice and feminist emancipation contribute to a universalist politics assembled from the needs of every human, cutting across race, ability, economic standing, and geographical position.  No more futureless repetition on the treadmill of capital, no more submission to the drudgery of labour, productive and reproductive alike, no more reification of the given masked as critique.  Our future requires depetrification.  XF is not a bid for revolution, but a wager on the long game of history, demanding imagination, dexterity and persistence. ',
             'date_created': datetime.today().isoformat(),
@@ -46,87 +49,65 @@ class ServiceTest(unittest.TestCase):
             }]
         }
 
-    def _flatten_thread(self, comments, parent_id=None):
-        for comment in comments:
-            if comment['children']:
-                yield from self._flatten_thread(comment['children'], parent_id=comment['_id'])
-            del comment['children']
-            comment['parent_id'] = parent_id
-            yield comment
-
-    def test_users_score(self):
+    def test_darwin_user_domain(self):
         data = [{
-            '_id': 0,
+            'id': 0,
             'comments': [self._make_comment()]
         }, {
-            '_id': 1,
+            'id': 1,
             'comments': [self._make_comment()]
         }]
-
-        resp = self._call_pipeline('users/score', data)
-        self.assertEquals(resp.status_code, 200)
-
+        resp = self._call_darwin('user', data, '4*community_score')
         expected = {
-            'id': int,
-            'community_score': float,
-            'discussion_score': float,
-            'moderation_prob': float,
-            'organization_score': float
+            'results': [16.450686105054196, 16.450686105054196]
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
-        for result in resp_json['results']['collection']:
-            for k, t in expected.items():
-                self.assertTrue(isinstance(result[k], t))
+        self.assertEqual(resp_json, expected)
 
-    def test_comments_score(self):
+    def test_darwin_comment_domain(self):
         data = [
             self._make_comment(),
             self._make_comment()
         ]
-
-        resp = self._call_pipeline('comments/score', data)
-        self.assertEquals(resp.status_code, 200)
-
+        resp = self._call_darwin('comment', data, '4*diversity_score')
         expected = {
-            'id': int,
-            'diversity_score': float,
-            'readability_scores': dict
+            'results': [0.5414014486863351, 0.5414014486863351]
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
-        for result in resp_json['results']['collection']:
-            for k, t in expected.items():
-                self.assertTrue(isinstance(result[k], t))
+        self.assertEqual(resp_json, expected)
 
-    def test_assets_score(self):
+    def test_darwin_asset_domain(self):
         data = [{
-            '_id': 0,
+            'id': 0,
             'threads': [
                 self._make_comment(n_replies=2, depth=2),
                 self._make_comment(n_replies=2, depth=2)
             ]
         }, {
-            '_id': 1,
+            'id': 1,
             'threads': [
                 self._make_comment(n_replies=2, depth=2),
                 self._make_comment(n_replies=2, depth=2)
             ]
         }]
-
-        # flatten threads
-        for asset in data:
-            threads = asset['threads']
-            del asset['threads']
-            asset['comments'] = [c for c in self._flatten_thread(threads)]
-
-        resp = self._call_pipeline('assets/score', data)
-        self.assertEquals(resp.status_code, 200)
-
+        resp = self._call_darwin('asset', data, '4*diversity_score+discussion_score')
         expected = {
-            'id': int,
-            'diversity_score': float,
-            'discussion_score': float,
+            'results': [8.490419077674748, 8.490419077674748]
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
-        for result in resp_json['results']['collection']:
-            for k, t in expected.items():
-                self.assertTrue(isinstance(result[k], t))
+        self.assertEqual(resp_json, expected)
+
+    def test_darwin_invalid_domain(self):
+        resp = self.client.post('/darwin/foobar')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_darwin_invalid_expr(self):
+        data = [{
+            'id': 0,
+            'comments': [self._make_comment()]
+        }, {
+            'id': 1,
+            'comments': [self._make_comment()]
+        }]
+        resp = self._call_darwin('user', data, '4*malicious()')
+        self.assertEqual(resp.status_code, 400)

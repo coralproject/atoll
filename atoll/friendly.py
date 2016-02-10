@@ -56,8 +56,10 @@ def get_example(input, depth=0):
         # only get the first 5 items
         return '{{{}}}'.format(','.join('{}:{}'.format(k, get_example(v)) for k, v in islice(input.items(), 5)))
     if hasattr(input, '__iter__') and not isinstance(input, str):
-        example = next(iter(input))
-        return '[{},...]'.format(get_example(example, depth + 1))
+        if input:
+            example = next(iter(input))
+            return '[{},...]'.format(get_example(example, depth + 1))
+        return '[...]'
     else:
         example = input
     return str(example)
