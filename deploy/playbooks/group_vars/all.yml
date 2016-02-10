@@ -1,4 +1,4 @@
-git_repo: git@github.com:CoralProject/atoll.git
+git_repo: https://github.com/coralproject/atoll.git
 venv_path: /var/env/atoll
 app_path: /var/www/atoll
 remote_user: ubuntu
@@ -8,3 +8,4 @@ worker_backend: amqp
 spark_binary: http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz
 zookeeper_host: 172.17.0.1:2181
 config_path: /var/www/atoll/config.yml
+host_name: localhost
