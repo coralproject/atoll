@@ -104,6 +104,8 @@ The provided `run` script makes it easy to get this up and running. Install Dock
 
 ## (Py)Spark support
 
+NOTE: Spark support is EXPERIMENTAL - some `atoll` pipeline operators may not be supported by Spark.
+
 `atoll` can run its pipelines either on a single computer with multiprocessing or across a Spark cluster.
 
 To run a pipeline across a Spark cluster you must have a Spark cluster managed by Zookeeper ([see here](https://github.com/frnsys/docker-mesos-pyspark-hdfs) for some Docker files to get you going, [see here](http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker) for more details).
