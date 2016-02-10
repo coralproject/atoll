@@ -81,7 +81,7 @@ class ServiceTest(unittest.TestCase):
     def test_users_rolling(self):
         data = [{
             '_id': 0,
-            'latest': {
+            'update': {
                 'comments': [self._make_comment()]
             },
             'prev': {
@@ -92,7 +92,7 @@ class ServiceTest(unittest.TestCase):
             }
         }, {
             '_id': 1,
-            'latest': {
+            'update': {
                 'comments': [self._make_comment()]
             },
             'prev': {

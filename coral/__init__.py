@@ -38,7 +38,7 @@ coral.register_pipeline('/assets/score', score_assets)
 
 
 rolling_mean_users = Pipeline(name='rolling_mean_users')\
-    .forkMap(rolling.extract_latest, rolling.extract_history)\
+    .forkMap(rolling.extract_update, rolling.extract_history)\
     .split(score_users, None).flatMap()\
     .reduceByKey(rolling.rolling_mean)\
     .map(assign_id).map(prune_none)

@@ -5,11 +5,11 @@ def extract_history(input):
     return input['_id'], prev
 
 
-def extract_latest(input):
+def extract_update(input):
     """extract the update data, from which we compute new metrics"""
-    latest = input['latest']
-    latest['_id'] = input['_id']
-    return latest
+    update = input['update']
+    update['_id'] = input['_id']
+    return update
 
 
 def rolling_mean(d1, d2, alpha=0.5):
