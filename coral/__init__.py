@@ -37,10 +37,6 @@ score_assets = Pipeline(name='score_assets')\
 coral.register_pipeline('/assets/score', score_assets)
 
 
-# TODO move darwin elsewhere
-from .darwin import bp as darwin_bp
-coral.blueprints.append(darwin_bp)
-
 # TODO/TEMP documentation endpoint
 from .doc import bp as doc_bp
 coral.blueprints.append(doc_bp)
