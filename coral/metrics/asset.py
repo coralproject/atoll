@@ -77,12 +77,11 @@ def _unique_participants(thread):
 
 def reconstruct_threads(asset):
     """reconstruct threads structure from a flat list of comments"""
-    # id = asset['id']
-    id = asset['_id'] # TODO mongo ids y/n?
+    id = asset['_id']
     parents = defaultdict(list)
+    print(asset)
     for c in asset['comments']:
-        # p_id = c['parent_id']
-        p_id = c['parent_d'] # TODO mongo ids y/n?
+        p_id = c['parent_id'] # TODO mongo ids y/n?
         if isinstance(p_id, float) and math.isnan(p_id):
             p_id = id
         parents[p_id].append(c)
@@ -96,8 +95,7 @@ def reconstruct_threads(asset):
 
 def _reconstruct_thread(comment, parents):
     """recursively reconstruct a thread from comments"""
-    id = comment['id']
-    # id = comment['_id'] # TODO mongo ids y/n?
+    id = comment['_id']
     thread = {
         'id': id,
         'user_id': comment['user_id'],

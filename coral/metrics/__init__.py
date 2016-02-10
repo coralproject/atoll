@@ -5,12 +5,7 @@ from collections import defaultdict
 def apply_metric(obj, metric):
     """apply a metric to an object.
     returns the object's id with the labeled computed metric"""
-
-    # TODO are we using mongo ids or what?
-    try:
-        id = obj['id']
-    except KeyError:
-        id = obj['_id']
+    id = obj['_id']
     return id, {metric.__name__: metric(obj)}
 
 
@@ -47,7 +42,8 @@ def aggregates(objs):
             'max': max(v),
             'min': min(v),
             'mean': np.mean(v),
-            'std': np.std(v)
+            'std': np.std(v),
+            'count': len(v),
         }
 
     return {

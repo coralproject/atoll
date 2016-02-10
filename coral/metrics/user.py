@@ -2,7 +2,11 @@ import numpy as np
 from .common import gamma_poission_model, beta_binomial_model, requires_keys
 
 
-@requires_keys('comments[].likes')
+def action_vals(actions, type):
+    return [a['value'] for a in actions if a['type'] == type]
+
+
+@requires_keys('comments[].actions')
 def community_score(user, k=1, theta=2):
     """
     description:
@@ -11,7 +15,7 @@ def community_score(user, k=1, theta=2):
     type: float
     valid: nonnegative
     """
-    X = np.array([c.get('likes', 0) for c in user['comments']])
+    X = np.array([sum(action_vals(c['actions'], 'like')) for c in user['comments']])
     n = len(X)
 
     # we want to be conservative in our estimate of the poisson's lambda parameter
