@@ -37,12 +37,12 @@ score_assets = Pipeline(name='score_assets')\
 coral.register_pipeline('/assets/score', score_assets)
 
 
-rolling_mean_users = Pipeline(name='rolling_mean_users')\
+rolling_score_users = Pipeline(name='rolling_score_users')\
     .forkMap(rolling.extract_update, rolling.extract_history)\
     .split(score_users, None).flatMap()\
-    .reduceByKey(rolling.rolling_mean)\
+    .reduceByKey(rolling.rolling_score)\
     .map(assign_id).map(prune_none)
-coral.register_pipeline('/users/rolling', rolling_mean_users)
+coral.register_pipeline('/users/rolling', rolling_score_users)
 
 
 from .doc import bp as doc_bp
