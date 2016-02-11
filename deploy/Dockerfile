@@ -15,7 +15,7 @@ RUN ansible-galaxy install angstwad.docker_ubuntu
 ENV ANSIBLE_SQUASH_ACTIONS "pkgng"
 
 # clone atoll repo
-RUN git clone -b docker https://github.com/coralproject/atoll /tmp/atoll
+RUN git clone https://github.com/coralproject/atoll /tmp/atoll
 
 # add ssl files; ansible will move to final destination
 ADD ssl/cert.crt /tmp/atoll/deploy/ssl/cert.crt
