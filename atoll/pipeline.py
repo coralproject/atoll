@@ -35,7 +35,7 @@ def branching(f):
     def decorated(self, *funcs):
         for func in funcs:
             assert ((not isinstance(func, type)) and callable(func)) or func is None, \
-                'Fork branches must be callable'
+                'Branches must be callable'
         branches = f(self, funcs)
         self.expected_kwargs += branches.expected_kwargs
         self.pipes.append((f.__name__, branches))
@@ -221,6 +221,16 @@ class Pipeline(Pipe):
         """like fork, but assumes bare functions are to be mapped"""
         return Branches(funcs, default='map')
 
+    @branching
+    def split(self, funcs):
+        """assumes input is tuples, each element is sent to a different branch"""
+        return Branches(funcs, default='to')
+
+    @branching
+    def splitMap(self, funcs):
+        """like split, but assumes bare functions are to be mapped"""
+        return Branches(funcs, default='map')
+
     # execution methods just take care of execution of the pipes
     # produced by the above composition/branching methods
 
@@ -289,6 +299,14 @@ class Pipeline(Pipe):
     @execution
     def _forkMap(self, funcs, input):
         return tuple(self.executor(self.funcproc(func)(input) for func in funcs))
+
+    @execution
+    def _split(self, funcs, input):
+        return tuple(self.executor(self.funcproc(f)(i) for f, i in zip(funcs, input)))
+
+    @execution
+    def _splitMap(self, funcs, input):
+        return tuple(self.executor(self.funcproc(f)(i) for f, i in zip(funcs, input)))
 
     def _serial(self, stream):
         return list(stream)

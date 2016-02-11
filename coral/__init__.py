@@ -1,6 +1,6 @@
 from functools import partial
 from atoll import Atoll, Pipeline
-from .metrics import user, comment, asset, apply_metric, merge_dicts, assign_id, prune_none, aggregates, group_by_taxonomy
+from .metrics import user, comment, asset, apply_metric, merge_dicts, assign_id, prune_none, aggregates, rolling, group_by_taxonomy
 
 
 coral = Atoll()
@@ -16,8 +16,8 @@ score_users = Pipeline(name='score_users')\
         partial(apply_metric, metric=user.mean_words_per_comment),
         partial(apply_metric, metric=user.percent_replies),
     ).flatMap()\
-    .reduceByKey(merge_dicts).map(assign_id).map(prune_none).to(aggregates)
-coral.register_pipeline('/users/score', score_users)
+    .reduceByKey(merge_dicts)
+coral.register_pipeline('/users/score', Pipeline(name='score_users').to(score_users).map(assign_id).map(prune_none).to(aggregates))
 
 
 from collections import defaultdict
@@ -65,6 +65,13 @@ score_assets_by_taxonomy = Pipeline(name='score_assets_by_taxonomy').to(group_by
                             .mapValues(Pipeline().mapValues(score_assets))
 coral.register_pipeline('/assets/score/taxonomies', score_assets_by_taxonomy)
 
-# TODO/TEMP documentation endpoint
+rolling_score_users = Pipeline(name='rolling_score_users')\
+    .forkMap(rolling.extract_update, rolling.extract_history)\
+    .split(score_users, None).flatMap()\
+    .reduceByKey(rolling.rolling_score)\
+    .map(assign_id).map(prune_none)
+coral.register_pipeline('/users/rolling', rolling_score_users)
+
+
 from .doc import bp as doc_bp
 coral.blueprints.append(doc_bp)

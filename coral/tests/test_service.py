@@ -78,6 +78,46 @@ class ServiceTest(unittest.TestCase):
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
 
+    def test_users_rolling(self):
+        data = [{
+            '_id': 0,
+            'update': {
+                'comments': [self._make_comment()]
+            },
+            'prev': {
+                'community_score': 1.,
+                'discussion_score': 1.,
+                'moderation_prob': 0.,
+                'organization_score': 1.
+            }
+        }, {
+            '_id': 1,
+            'update': {
+                'comments': [self._make_comment()]
+            },
+            'prev': {
+                'community_score': 1.,
+                'discussion_score': 1.,
+                'moderation_prob': 0.,
+                'organization_score': 1.
+            }
+        }]
+
+        resp = self._call_pipeline('users/rolling', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected = {
+            'id': int,
+            'community_score': float,
+            'discussion_score': float,
+            'moderation_prob': float,
+            'organization_score': float
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for result in resp_json['results']:
+            for k, t in expected.items():
+                self.assertTrue(isinstance(result[k], t))
+
     def test_comments_score(self):
         data = [
             self._make_comment(),
