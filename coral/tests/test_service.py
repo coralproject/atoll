@@ -259,7 +259,7 @@ class ServiceTest(unittest.TestCase):
         }
 
         # training the model
-        resp = self._call_pipeline('comments/model/train', data)
+        resp = self._call_pipeline('comments/model/moderation/train', data)
         self.assertEquals(resp.status_code, 200)
 
         expected = {
@@ -273,12 +273,12 @@ class ServiceTest(unittest.TestCase):
             self.assertTrue(isinstance(v, expected[k]))
 
         # running the model
-        resp = self._call_pipeline('comments/model/run', data)
+        resp = self._call_pipeline('comments/model/moderation/run', data)
         self.assertEquals(resp.status_code, 200)
 
         expected = {
             'id': int,
-            'moderation_prob': float
+            'prob': float
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
         for result in resp_json['results']:

@@ -1,14 +1,14 @@
 from functools import partial
 from atoll import Atoll, Pipeline
-from .nlp import train_model, run_model
+from .nlp import train_moderation_model, run_moderation_model
 from .metrics import user, comment, asset, apply_metric, merge_dicts, assign_id, prune_none, aggregates, rolling, taxonomy
 
 
 coral = Atoll()
 
 # simple moderation classification model
-coral.register_pipeline('/comments/model/train', train_model)
-coral.register_pipeline('/comments/model/run', run_model)
+coral.register_pipeline('/comments/model/moderation/train', train_moderation_model)
+coral.register_pipeline('/comments/model/moderation/run', run_moderation_model)
 
 score_users = Pipeline(name='score_users')\
     .forkMap(
