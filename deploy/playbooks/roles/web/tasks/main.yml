@@ -6,7 +6,7 @@
   with_items:
       - nginx
 
- name: remove default nginx site
+- name: remove default nginx site
   file: path=/etc/nginx/sites-enabled/default state=absent
 
 - name: copy nginx config
