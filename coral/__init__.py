@@ -1,6 +1,6 @@
 from functools import partial
 from atoll import Atoll, Pipeline
-from .metrics import user, comment, asset, apply_metric, merge_dicts, assign_id, prune_none, aggregates, rolling, group_by_taxonomy
+from .metrics import user, comment, asset, apply_metric, merge_dicts, assign_id, prune_none, aggregates, rolling, taxonomy
 
 
 coral = Atoll()
@@ -19,38 +19,20 @@ score_users = Pipeline(name='score_users')\
     .reduceByKey(merge_dicts)
 coral.register_pipeline('/users/score', Pipeline(name='score_users').to(score_users).map(assign_id).map(prune_none).to(aggregates))
 
-
-from collections import defaultdict
-def compute_means(inputs):
-    """computes means for a set of taxonomy-tagged inputs
-    `inputs` is something like:
-        [('world', [{'some_metric': 0.1}, {'some_metric': 0.5}, ...]),
-         ('sports', [{'some_metric': 0.1}, {'some_metric': 0.5}, ...]),
-         ...]
-    """
-    means = {}
-    for taxonomy, items in inputs:
-        means[taxonomy] = defaultdict(list)
-        for item in items:
-            for k, v in item.items():
-                if k != 'id':
-                    k = 'mean_{}'.format(k)
-                    means[taxonomy][k].append(v)
-        for metric, vals in means[taxonomy].items():
-            means[taxonomy][metric] = sum(vals)/len(vals)
-    return means
-
 score_comments = Pipeline(name='score_comments')\
     .forkMap(
         partial(apply_metric, metric=comment.diversity_score),
         partial(apply_metric, metric=comment.readability_scores)
     ).flatMap()\
-    .reduceByKey(merge_dicts).map(assign_id).map(prune_none).to(aggregates)
-coral.register_pipeline('/comments/score', score_comments)
+    .reduceByKey(merge_dicts)
+coral.register_pipeline('/comments/score', Pipeline(name='score_comments').to(score_comments).map(assign_id).map(prune_none).to(aggregates))
 
-score_comments_by_taxonomy = Pipeline(name='score_comments_by_taxonomy').to(group_by_taxonomy)\
-                                .mapValues(Pipeline().mapValues(score_comments)).mapValues(compute_means)
-coral.register_pipeline('/comments/score/taxonomies', score_comments_by_taxonomy)
+score_comments_by_taxonomy = Pipeline(name='score_comments_by_taxonomy')\
+    .forkMap(None, taxonomy.extract_taxonomy)\
+    .split(score_comments, None).flatMap()\
+    .reduceByKey(merge_dicts).map(assign_id)\
+    .to(taxonomy.group_by_taxonomy).mapValues(taxonomy.taxonomy_aggregates).to(dict)
+coral.register_pipeline('/comments/score/taxonomy', score_comments_by_taxonomy)
 
 score_assets = Pipeline(name='score_assets')\
     .map(asset.reconstruct_threads)\
@@ -58,12 +40,15 @@ score_assets = Pipeline(name='score_assets')\
         partial(apply_metric, metric=asset.discussion_score),
         partial(apply_metric, metric=asset.diversity_score)
     ).flatMap()\
-    .reduceByKey(merge_dicts).map(assign_id).map(prune_none).to(aggregates)
-coral.register_pipeline('/assets/score', score_assets)
+    .reduceByKey(merge_dicts)
+coral.register_pipeline('/assets/score', Pipeline(name='score_assets').to(score_assets).map(assign_id).map(prune_none).to(aggregates))
 
-score_assets_by_taxonomy = Pipeline(name='score_assets_by_taxonomy').to(group_by_taxonomy)\
-                            .mapValues(Pipeline().mapValues(score_assets))
-coral.register_pipeline('/assets/score/taxonomies', score_assets_by_taxonomy)
+score_assets_by_taxonomy = Pipeline(name='score_assets_by_taxonomy')\
+    .forkMap(None, taxonomy.extract_taxonomy)\
+    .split(score_assets, None).flatMap()\
+    .reduceByKey(merge_dicts).map(assign_id)\
+    .to(taxonomy.group_by_taxonomy).mapValues(taxonomy.taxonomy_aggregates).to(dict)
+coral.register_pipeline('/assets/score/taxonomy', score_assets_by_taxonomy)
 
 rolling_score_users = Pipeline(name='rolling_score_users')\
     .forkMap(rolling.extract_update, rolling.extract_history)\

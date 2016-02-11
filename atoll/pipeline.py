@@ -16,7 +16,7 @@ def composition(f):
     """decorates a function which builds the pipeline,
     i.e. a function that adds a new pipe"""
     def decorated(self, func=None, *args, **kwargs):
-        assert ((not isinstance(func, type)) and callable(func)) or func is None, \
+        assert callable(func) or func is None, \
             'Pipes must be callable'
 
         if isinstance(func, Pipeline):

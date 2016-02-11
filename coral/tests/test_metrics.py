@@ -1,6 +1,6 @@
 import unittest
 from atoll import Pipeline
-from coral.metrics import group_by_taxonomy
+from coral.metrics.taxonomy import group_by_taxonomy
 from coral.metrics.common import has_key
 
 def faux_metrics(vals):

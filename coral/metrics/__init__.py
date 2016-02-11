@@ -21,20 +21,6 @@ def assign_id(id, data):
     return data
 
 
-def group_by_taxonomy(collection):
-    """break a collection into groups based on taxonomies.
-    entities may belong to multiple taxonomies.
-    this assumes that:
-        - the key for taxonomy is 'taxonomy'
-        - taxonomies have the format: 'section:world;author:Foo Bar;section:politics'
-    """
-    groups = defaultdict(list)
-    for entity in collection:
-        for taxonomy in entity['taxonomy'].split(';'):
-            groups[taxonomy].append(entity.copy())
-    return dict(groups)
-
-
 def prune_none(data):
     """removes keys where the value is `None`,
     i.e. metrics which could not be computed"""
@@ -42,11 +28,12 @@ def prune_none(data):
 
 
 def aggregates(objs):
-    """computes descriptive statistics over the aggregates of metrics computed for the collection"""
+    """computes descriptive statistics over the
+    aggregates of metrics computed for the collection"""
     aggs = defaultdict(list)
     for metrics in objs:
         for k, v in _flatten(metrics):
-            if k == 'id':
+            if k == 'id' or not isinstance(v, (float, int)):
                 continue
             else:
                 aggs[k].append(v)
