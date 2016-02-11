@@ -12,8 +12,8 @@ def extract_update(input):
     return update
 
 
-def rolling_mean(d1, d2, alpha=0.5):
-    """computes rolling means, decaying the past by alpha.
+def rolling_score(d1, d2, alpha=0.5):
+    """computes rolling scores, decaying the past by alpha.
     the past metrics are identified by the `prev` key.
     any keys present in the update dict that are not in the past
     dict are carried over."""

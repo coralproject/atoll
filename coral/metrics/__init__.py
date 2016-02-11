@@ -28,11 +28,12 @@ def prune_none(data):
 
 
 def aggregates(objs):
-    """computes descriptive statistics over the aggregates of metrics computed for the collection"""
+    """computes descriptive statistics over the
+    aggregates of metrics computed for the collection"""
     aggs = defaultdict(list)
     for metrics in objs:
         for k, v in _flatten(metrics):
-            if k == 'id':
+            if k == 'id' or not isinstance(v, (float, int)):
                 continue
             else:
                 aggs[k].append(v)

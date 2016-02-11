@@ -1,6 +1,6 @@
 from functools import partial
 from atoll import Atoll, Pipeline
-from .metrics import user, comment, asset, apply_metric, merge_dicts, assign_id, prune_none, aggregates, rolling
+from .metrics import user, comment, asset, apply_metric, merge_dicts, assign_id, prune_none, aggregates, rolling, taxonomy
 
 
 coral = Atoll()
@@ -24,8 +24,15 @@ score_comments = Pipeline(name='score_comments')\
         partial(apply_metric, metric=comment.diversity_score),
         partial(apply_metric, metric=comment.readability_scores)
     ).flatMap()\
-    .reduceByKey(merge_dicts).map(assign_id).map(prune_none).to(aggregates)
-coral.register_pipeline('/comments/score', score_comments)
+    .reduceByKey(merge_dicts)
+coral.register_pipeline('/comments/score', Pipeline(name='score_comments').to(score_comments).map(assign_id).map(prune_none).to(aggregates))
+
+score_comments_by_taxonomy = Pipeline(name='score_comments_by_taxonomy')\
+    .forkMap(None, taxonomy.extract_taxonomy)\
+    .split(score_comments, None).flatMap()\
+    .reduceByKey(merge_dicts).map(assign_id)\
+    .to(taxonomy.group_by_taxonomy).mapValues(taxonomy.taxonomy_aggregates).to(dict)
+coral.register_pipeline('/comments/score/taxonomy', score_comments_by_taxonomy)
 
 score_assets = Pipeline(name='score_assets')\
     .map(asset.reconstruct_threads)\
@@ -33,9 +40,15 @@ score_assets = Pipeline(name='score_assets')\
         partial(apply_metric, metric=asset.discussion_score),
         partial(apply_metric, metric=asset.diversity_score)
     ).flatMap()\
-    .reduceByKey(merge_dicts).map(assign_id).map(prune_none).to(aggregates)
-coral.register_pipeline('/assets/score', score_assets)
+    .reduceByKey(merge_dicts)
+coral.register_pipeline('/assets/score', Pipeline(name='score_assets').to(score_assets).map(assign_id).map(prune_none).to(aggregates))
 
+score_assets_by_taxonomy = Pipeline(name='score_assets_by_taxonomy')\
+    .forkMap(None, taxonomy.extract_taxonomy)\
+    .split(score_assets, None).flatMap()\
+    .reduceByKey(merge_dicts).map(assign_id)\
+    .to(taxonomy.group_by_taxonomy).mapValues(taxonomy.taxonomy_aggregates).to(dict)
+coral.register_pipeline('/assets/score/taxonomy', score_assets_by_taxonomy)
 
 rolling_score_users = Pipeline(name='rolling_score_users')\
     .forkMap(rolling.extract_update, rolling.extract_history)\

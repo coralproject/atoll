@@ -26,6 +26,17 @@ class ServiceTest(unittest.TestCase):
                                  data=json.dumps({'data': data}),
                                  headers=headers)
 
+    def _check_aggregates(self, agg):
+        expected = {
+            'max': float,
+            'min': float,
+            'mean': float,
+            'std': float,
+            'count': int
+        }
+        for k, t in expected.items():
+            self.assertTrue(isinstance(agg[k], t))
+
     def _make_comment(self, n_replies=0, depth=1):
         if depth == 0:
             n_replies = 0
@@ -77,6 +88,8 @@ class ServiceTest(unittest.TestCase):
         for result in resp_json['results']['collection']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
+        for k, agg in resp_json['results']['aggregates'].items():
+            self._check_aggregates(agg)
 
     def test_users_rolling(self):
         data = [{
@@ -136,6 +149,8 @@ class ServiceTest(unittest.TestCase):
         for result in resp_json['results']['collection']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
+        for k, agg in resp_json['results']['aggregates'].items():
+            self._check_aggregates(agg)
 
     def test_assets_score(self):
         data = [{
@@ -170,3 +185,65 @@ class ServiceTest(unittest.TestCase):
         for result in resp_json['results']['collection']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
+        for k, agg in resp_json['results']['aggregates'].items():
+            self._check_aggregates(agg)
+
+    def test_comments_score_by_taxonomy(self):
+        data = [
+            self._make_comment(),
+            self._make_comment()
+        ]
+        data[0]['taxonomy'] = 'section:politics;author:Foo Bar'
+        data[1]['taxonomy'] = 'section:politics;author:Sup Yo'
+
+        resp = self._call_pipeline('comments/score/taxonomy', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected_tags = ['section:politics', 'author:Foo Bar', 'author:Sup Yo']
+        expected_keys = ['diversity_score', 'readability_scores.ari',
+                         'readability_scores.coleman_liau_index', 'readability_scores.flesch_reading_ease',
+                         'readability_scores.rix', 'readability_scores.smog_index',
+                         'readability_scores.gunning_fog_index', 'readability_scores.flesch_kincaid_grade_level',
+                         'readability_scores.lix']
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        results = resp_json['results']
+
+        for tag in expected_tags:
+            for key in expected_keys:
+                self._check_aggregates(results[tag][key])
+
+    def test_assets_score_by_taxonomy(self):
+        data = [{
+            '_id': 0,
+            'threads': [
+                self._make_comment(n_replies=2, depth=2),
+                self._make_comment(n_replies=2, depth=2)
+            ]
+        }, {
+            '_id': 1,
+            'threads': [
+                self._make_comment(n_replies=2, depth=2),
+                self._make_comment(n_replies=2, depth=2)
+            ]
+        }]
+
+        # flatten threads
+        for asset in data:
+            threads = asset['threads']
+            del asset['threads']
+            asset['comments'] = [c for c in self._flatten_thread(threads)]
+
+        data[0]['taxonomy'] = 'section:politics;author:Foo Bar'
+        data[1]['taxonomy'] = 'section:politics;author:Sup Yo'
+
+        resp = self._call_pipeline('assets/score/taxonomy', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected_tags = ['section:politics', 'author:Foo Bar', 'author:Sup Yo']
+        expected_keys = ['diversity_score', 'discussion_score']
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        results = resp_json['results']
+
+        for tag in expected_tags:
+            for key in expected_keys:
+                self._check_aggregates(results[tag][key])
