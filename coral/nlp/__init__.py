@@ -1,5 +1,5 @@
 from atoll import Pipeline
-from .models import train_binary, run_model, preprocess
+from .models import train_binary, run_binary, preprocess
 
 
 def extract_samples(data):
@@ -13,4 +13,4 @@ def extract_labels(comments):
 
 
 train_moderation_model = Pipeline(name='train_comments_moderation_model').fork(extract_name, extract_samples).to(preprocess, label_func=extract_labels).to(train_binary)
-run_moderation_model = Pipeline(name='run_comments_moderation_model').fork(extract_name, extract_samples).to(run_model)
+run_moderation_model = Pipeline(name='run_comments_moderation_model').fork(extract_name, extract_samples).to(run_binary)

@@ -71,7 +71,8 @@ def train_binary(name, vecs, labels):
     }
 
 
-def run_model(name, comments):
+def run_binary(name, comments):
+    """run a binary model (logistic regression)"""
     models_path = models_dir()
     vector = joblib.load('{}/{}_vectorizer.pkl'.format(models_path, name))
     vecs = vector.transform((c['body'] for c in comments))
