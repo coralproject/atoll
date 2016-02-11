@@ -33,19 +33,14 @@ class MetricsTest(unittest.TestCase):
             'id': 3,
             'taxonomy': 'section:sports;author:Foo Bar;section:entertainment'
         }]
-        expected = [('section', [('politics', {'foo': 1, 'count': 2}), ('world', {'foo': 1, 'count': 2}), ('entertainment', {'foo': 3, 'count': 1}), ('sports', {'foo': 5, 'count': 2})]), ('author', [('Foo Bar', {'foo': 4, 'count': 3}), ('Sup Yo', {'foo': 2, 'count': 1})])]
+        expected = [('section:politics', {'foo': 1, 'count': 2}), ('section:world', {'foo': 1, 'count': 2}), ('section:entertainment', {'foo': 3, 'count': 1}), ('section:sports', {'foo': 5, 'count': 2}), ('author:Foo Bar', {'foo': 4, 'count': 3}), ('author:Sup Yo', {'foo': 2, 'count': 1})]
 
-        taxonomy_pipeline = Pipeline().mapValues(faux_metrics)
-        pipeline = Pipeline().to(group_by_taxonomy).mapValues(taxonomy_pipeline)
+        pipeline = Pipeline().to(group_by_taxonomy).mapValues(faux_metrics)
         metrics = pipeline(data)
 
         # make them comparable
         metrics = dict(metrics)
         expected = dict(expected)
-        for v in metrics.values():
-            v.sort()
-        for v in expected.values():
-            v.sort()
         self.assertEqual(metrics, expected)
 
     def test_has_key(self):

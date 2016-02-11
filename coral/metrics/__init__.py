@@ -28,15 +28,11 @@ def group_by_taxonomy(collection):
         - the key for taxonomy is 'taxonomy'
         - taxonomies have the format: 'section:world;author:Foo Bar;section:politics'
     """
-    groups = defaultdict(lambda: defaultdict(list))
+    groups = defaultdict(list)
     for entity in collection:
         for taxonomy in entity['taxonomy'].split(';'):
-            # NOTE/TODO this does _not_ copy the entity,
-            # it is a shared reference to it. Thus a change
-            # to one will affect it elsewhere - should it be copied instead?
-            type, name = taxonomy.split(':')
-            groups[type][name].append(entity)
-    return groups
+            groups[taxonomy].append(entity.copy())
+    return dict(groups)
 
 
 def prune_none(data):

@@ -130,3 +130,24 @@ class ServiceTest(unittest.TestCase):
         for result in resp_json['results']['collection']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
+
+    def test_comments_score_by_taxonomy(self):
+        data = [
+            self._make_comment(),
+            self._make_comment()
+        ]
+        data[0]['taxonomy'] = 'section:politics;author:Foo Bar'
+        data[1]['taxonomy'] = 'section:politics;author:Sup Yo'
+
+        resp = self._call_pipeline('comments/score/taxonomy', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected = {
+            'id': int,
+            'diversity_score': float,
+            'readability_scores': dict
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for result in resp_json['results']['collection']:
+            for k, t in expected.items():
+                self.assertTrue(isinstance(result[k], t))

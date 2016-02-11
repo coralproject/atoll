@@ -40,10 +40,6 @@ def compute_means(inputs):
             means[taxonomy][metric] = sum(vals)/len(vals)
     return means
 
-score_users_by_taxonomy = Pipeline(name='score_users_by_taxonomy').to(group_by_taxonomy)\
-                            .mapValues(Pipeline().mapValues(score_users)).mapValues(compute_means)
-coral.register_pipeline('/users/score/taxonomies', score_users_by_taxonomy)
-
 score_comments = Pipeline(name='score_comments')\
     .forkMap(
         partial(apply_metric, metric=comment.diversity_score),
