@@ -5,7 +5,6 @@ from itertools import chain
 from functools import partial
 from joblib import Parallel, delayed
 from atoll.pipes import Pipe, Branches
-from atoll.friendly import get_example
 from atoll.distrib import spark_context, is_rdd
 
 
@@ -136,10 +135,8 @@ class Pipeline(Pipe):
                 try:
                     input = getattr(self, '_' + op)(pipe, input, **kwargs)
                 except:
-                    logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(
-                        pipe,
-                        pipe.sig,
-                        get_example(input)))
+                    logger.exception('Failed to execute pipe "{}{}"'.format(
+                        pipe, pipe.sig))
                     raise
 
             del self.executor
@@ -238,6 +235,15 @@ class Pipeline(Pipe):
     def _to(self, func, input):
         if not isinstance(input, tuple):
             input = (input,)
+        else:
+            # flatten nested tuples
+            args = []
+            for arg in input:
+                if isinstance(arg, tuple):
+                    args.extend(arg)
+                else:
+                    args.append(arg)
+            input = args
         return func(*input)
 
     @execution

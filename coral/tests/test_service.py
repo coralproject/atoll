@@ -37,12 +37,12 @@ class ServiceTest(unittest.TestCase):
         for k, t in expected.items():
             self.assertTrue(isinstance(agg[k], t))
 
-    def _make_comment(self, n_replies=0, depth=1):
+    def _make_comment(self, n_replies=0, depth=1, **kwargs):
         if depth == 0:
             n_replies = 0
 
         self.counter += 1
-        return {
+        data = {
             '_id': self.counter,
             'user_id': self.counter,
             'starred': False,
@@ -56,6 +56,8 @@ class ServiceTest(unittest.TestCase):
                 'type': 'likes'
             }]
         }
+        data.update(kwargs)
+        return data
 
     def _flatten_thread(self, comments, parent_id=None):
         for comment in comments:
@@ -247,3 +249,38 @@ class ServiceTest(unittest.TestCase):
         for tag in expected_tags:
             for key in expected_keys:
                 self._check_aggregates(results[tag][key])
+
+    def test_train_and_run_comments_model(self):
+        comments = [self._make_comment(status=2, body='THIS IS GOOD') for _ in range(50)]
+        comments += [self._make_comment(status=3, body='THIS IS MALICIOUS') for _ in range(50)]
+        data = {
+            'samples': comments,
+            'name': 'test_model'
+        }
+
+        # training the model
+        resp = self._call_pipeline('comments/model/moderation/train', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected = {
+            'name': str,
+            'notes': list,
+            'performance': dict,
+            'n_samples': int
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for k, v in resp_json['results'].items():
+            self.assertTrue(isinstance(v, expected[k]))
+
+        # running the model
+        resp = self._call_pipeline('comments/model/moderation/run', data)
+        self.assertEquals(resp.status_code, 200)
+
+        expected = {
+            'id': int,
+            'prob': float
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for result in resp_json['results']:
+            for k, t in expected.items():
+                self.assertTrue(isinstance(result[k], t))
