@@ -79,7 +79,6 @@ def reconstruct_threads(asset):
     """reconstruct threads structure from a flat list of comments"""
     id = asset['_id']
     parents = defaultdict(list)
-    print(asset)
     for c in asset['comments']:
         p_id = c['parent_id'] # TODO mongo ids y/n?
         if isinstance(p_id, float) and math.isnan(p_id):
