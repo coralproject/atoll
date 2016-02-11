@@ -1,7 +1,7 @@
 import unittest
 from functools import partial
 from atoll import Pipeline
-from atoll.friendly import get_example, _get_name
+from atoll.friendly import _get_name
 
 def add(x, y):
     return x + y
@@ -32,29 +32,3 @@ class FriendlyTests(unittest.TestCase):
         p = Pipeline().to(add).fork(Pipeline().to(add),
                                     Pipeline().to(add))
         self.assertEqual(str(p), 'to:add -> fork:to:add|to:add')
-
-    def test_examples(self):
-        input = [1,2,3,4]
-        self.assertEqual(get_example(input), '[1,...]')
-
-        input = [[1,2], [3,4]]
-        self.assertEqual(get_example(input), '[[1,...],...]')
-
-        input = 'foo'
-        self.assertEqual(get_example(input), 'foo')
-
-        input = 1
-        self.assertEqual(get_example(input), '1')
-
-        input = (1,2,3)
-        self.assertEqual(get_example(input), '(1,2,3)')
-
-        input = [(1,2,3),(4,5,6)]
-        self.assertEqual(get_example(input), '[(1,2,3),...]')
-
-        input = [([1,2,3],2,3),(4,5,6)]
-        self.assertEqual(get_example(input), '[([1,...],2,3),...]')
-
-        input = {'foo':'bar', 'hi': 1}
-        self.assertTrue(get_example(input) in ['{foo:bar,hi:1}', '{hi:1,foo:bar}'])
-

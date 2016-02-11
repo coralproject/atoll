@@ -15,20 +15,16 @@ RUN ansible-galaxy install angstwad.docker_ubuntu
 ENV ANSIBLE_SQUASH_ACTIONS "pkgng"
 
 # clone atoll repo
-RUN git clone -b docker https://github.com/coralproject/atoll /tmp/atoll
-
-# add ssl files; ansible will move to final destination
-ADD ssl/cert.crt /tmp/atoll/deploy/ssl/cert.crt
-ADD ssl/cert.key /tmp/atoll/deploy/ssl/cert.key
+RUN git clone https://github.com/coralproject/atoll /tmp/atoll
 
 # self-provision
-RUN ansible-playbook -i /tmp/atoll/deploy/hosts.ini /tmp/atoll/deploy/playbooks/coral.yml -e "env=docker"
+RUN ansible-playbook -i /tmp/atoll/deploy/hosts.ini /tmp/atoll/deploy/playbooks/docker.yml -e "env=docker"
 
 # clean up
 RUN service supervisor stop
 RUN rm -rf /tmp/atoll
 
-# expose ports, 22->ssh, 80->atoll
-EXPOSE 22 80
+# expose ports 22->ssh
+EXPOSE 22
 
 CMD ["supervisord", "-n"]

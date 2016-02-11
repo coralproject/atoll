@@ -6,4 +6,3 @@
       wsgi_filename: coral
   roles:
     - app
-    - web

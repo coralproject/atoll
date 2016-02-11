@@ -14,7 +14,6 @@
       - git
       - python3.4
       - python3-pip
-      - nginx
       - uwsgi
       - uwsgi-plugin-python3
       - supervisor
@@ -46,22 +45,6 @@
 - name: copy config
   template: src=config.yml dest={{ config_path }} mode=0644 group={{ web_group }} owner={{ web_group }}
 
-- name: remove default nginx site
-  file: path=/etc/nginx/sites-enabled/default state=absent
-
-- name: copy nginx config
-  template: src=nginx.conf dest=/etc/nginx/sites-available/{{ app_name }}.conf
-  notify: restart nginx
-
-- name: enable nginx config (symlink)
-  file: src=/etc/nginx/sites-available/{{ app_name }}.conf dest=/etc/nginx/sites-enabled/{{ app_name }}.conf state=link
-
-- name: copy ssl cert
-  copy: src=ssl/cert.crt dest=/etc/nginx/ssl-bundle.crt
-
-- name: copy ssl key
-  copy: src=ssl/cert.key dest=/etc/nginx/cert.key
-
 - name: copy uwsgi config
   template: src=uwsgi.ini  dest=/etc/uwsgi/apps-available/{{ app_name }}.ini group={{ web_group }} owner={{ web_group }}
   notify: restart app
@@ -88,9 +71,6 @@
 
 - shell: supervisorctl update
   when: supervisor_conf.changed
-
-- name: ensure nginx is running
-  service: name=nginx enabled=yes state=started
 
 - name: ensure app is running
   supervisorctl: name={{ app_name }} state=restarted

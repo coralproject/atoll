@@ -5,7 +5,6 @@ from itertools import chain
 from functools import partial
 from joblib import Parallel, delayed
 from atoll.pipes import Pipe, Branches
-from atoll.friendly import get_example
 from atoll.distrib import spark_context, is_rdd
 
 
@@ -16,13 +15,14 @@ def composition(f):
     """decorates a function which builds the pipeline,
     i.e. a function that adds a new pipe"""
     def decorated(self, func=None, *args, **kwargs):
-        assert ((not isinstance(func, type)) and callable(func)) or func is None, \
+        assert callable(func) or func is None, \
             'Pipes must be callable'
 
         if isinstance(func, Pipeline):
             pipe = func
         else:
             pipe = f(self, func, *args, **kwargs)
+
         self.expected_kwargs += pipe.expected_kwargs
         self.pipes.append((f.__name__, pipe))
         return self
@@ -34,7 +34,7 @@ def branching(f):
     def decorated(self, *funcs):
         for func in funcs:
             assert ((not isinstance(func, type)) and callable(func)) or func is None, \
-                'Fork branches must be callable'
+                'Branches must be callable'
         branches = f(self, funcs)
         self.expected_kwargs += branches.expected_kwargs
         self.pipes.append((f.__name__, branches))
@@ -135,10 +135,8 @@ class Pipeline(Pipe):
                 try:
                     input = getattr(self, '_' + op)(pipe, input, **kwargs)
                 except:
-                    logger.exception('Failed to execute pipe "{}{}"\nInput:\n{}'.format(
-                        pipe,
-                        pipe.sig,
-                        get_example(input)))
+                    logger.exception('Failed to execute pipe "{}{}"'.format(
+                        pipe, pipe.sig))
                     raise
 
             del self.executor
@@ -220,6 +218,16 @@ class Pipeline(Pipe):
         """like fork, but assumes bare functions are to be mapped"""
         return Branches(funcs, default='map')
 
+    @branching
+    def split(self, funcs):
+        """assumes input is tuples, each element is sent to a different branch"""
+        return Branches(funcs, default='to')
+
+    @branching
+    def splitMap(self, funcs):
+        """like split, but assumes bare functions are to be mapped"""
+        return Branches(funcs, default='map')
+
     # execution methods just take care of execution of the pipes
     # produced by the above composition/branching methods
 
@@ -227,6 +235,15 @@ class Pipeline(Pipe):
     def _to(self, func, input):
         if not isinstance(input, tuple):
             input = (input,)
+        else:
+            # flatten nested tuples
+            args = []
+            for arg in input:
+                if isinstance(arg, tuple):
+                    args.extend(arg)
+                else:
+                    args.append(arg)
+            input = args
         return func(*input)
 
     @execution
@@ -288,6 +305,14 @@ class Pipeline(Pipe):
     @execution
     def _forkMap(self, funcs, input):
         return tuple(self.executor(self.funcproc(func)(input) for func in funcs))
+
+    @execution
+    def _split(self, funcs, input):
+        return tuple(self.executor(self.funcproc(f)(i) for f, i in zip(funcs, input)))
+
+    @execution
+    def _splitMap(self, funcs, input):
+        return tuple(self.executor(self.funcproc(f)(i) for f, i in zip(funcs, input)))
 
     def _serial(self, stream):
         return list(stream)

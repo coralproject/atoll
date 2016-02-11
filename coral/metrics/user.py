@@ -1,13 +1,12 @@
 import numpy as np
-from .common import gamma_poission_model, beta_binomial_model
-from ..models import User
+from .common import gamma_poission_model, beta_binomial_model, requires_keys
 
 
-def make(data):
-    """convert json (dict) data to a user object"""
-    return User(**data)
+def action_vals(actions, type):
+    return [a['value'] for a in actions if a['type'] == type]
 
 
+@requires_keys('comments[].actions')
 def community_score(user, k=1, theta=2):
     """
     description:
@@ -16,7 +15,7 @@ def community_score(user, k=1, theta=2):
     type: float
     valid: nonnegative
     """
-    X = np.array([c.likes for c in user.comments])
+    X = np.array([sum(action_vals(c['actions'], 'like')) for c in user['comments']])
     n = len(X)
 
     # we want to be conservative in our estimate of the poisson's lambda parameter
@@ -25,6 +24,7 @@ def community_score(user, k=1, theta=2):
     return gamma_poission_model(X, n, k, theta, 0.05)
 
 
+@requires_keys('comments[].starred')
 def organization_score(user, alpha=2, beta=2):
     """
     description:
@@ -36,14 +36,15 @@ def organization_score(user, alpha=2, beta=2):
     # assume whether or not a comment is starred
     # is drawn from a binomial distribution parameterized by n, p
     # n is known, we want to estimate p
-    y = sum(1 for c in user.comments if c.starred)
-    n = len(user.comments)
+    y = sum(1 for c in user['comments'] if c.get('starred', False))
+    n = len(user['comments'])
 
     # again, to be conservative, we take the lower-bound
     # of the 90% credible interval (the 0.05 quantile)
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
+@requires_keys('comments[].status')
 def moderation_prob(user, alpha=2, beta=2):
     """
     description:
@@ -52,11 +53,13 @@ def moderation_prob(user, alpha=2, beta=2):
     type: float
     valid: probability
     """
-    y = sum(1 for c in user.comments if c.moderated)
-    n = len(user.comments)
+    # key: 1->unmoderated, 2->accepted, 3->rejected, 4->escalated
+    y = sum(1 for c in user['comments'] if c.get('status', 1) in [3,4])
+    n = len(user['comments'])
     return beta_binomial_model(y, n, alpha, beta, 0.05)
 
 
+@requires_keys('comments[].children')
 def discussion_score(user, k=1, theta=2):
     """
     description:
@@ -65,11 +68,12 @@ def discussion_score(user, k=1, theta=2):
     type: float
     valid: nonnegative
     """
-    X = np.array([len(c.children) for c in user.comments])
+    X = np.array([len(c.get('children', [])) for c in user['comments']])
     n = len(X)
     return gamma_poission_model(X, n, k, theta, 0.05)
 
 
+@requires_keys('comments[].likes')
 def mean_likes_per_comment(user):
     """
     description:
@@ -78,9 +82,10 @@ def mean_likes_per_comment(user):
     type: float
     valid: nonnegative
     """
-    return np.mean([c.likes for c in user.comments])
+    return np.mean([c.get('likes', 0) for c in user['comments']])
 
 
+@requires_keys('comments[].children')
 def mean_replies_per_comment(user):
     """
     description:
@@ -89,9 +94,10 @@ def mean_replies_per_comment(user):
     type: float
     valid: nonnegative
     """
-    return np.mean([len(c.children) for c in user.comments])
+    return np.mean([len(c.get('children', [])) for c in user['comments']])
 
 
+@requires_keys('comments[].parent_id')
 def percent_replies(user):
     """
     description:
@@ -100,9 +106,10 @@ def percent_replies(user):
     type: float
     valid: probability
     """
-    return sum(1 if c.parent_id is not None else 0 for c in user.comments)/len(user.comments)
+    return sum(1 if c.get('parent_id', '') else 0 for c in user['comments'])/len(user['comments'])
 
 
+@requires_keys('comments[].body')
 def mean_words_per_comment(user):
     """
     description:
@@ -111,4 +118,4 @@ def mean_words_per_comment(user):
     type: float
     valid: nonnegative
     """
-    return np.mean([len(c.content.split(' ')) for c in user.comments])
+    return np.mean([len(c.get('body', '').split(' ')) for c in user['comments']])
