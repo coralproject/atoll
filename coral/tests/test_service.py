@@ -251,8 +251,8 @@ class ServiceTest(unittest.TestCase):
                 self._check_aggregates(results[tag][key])
 
     def test_train_and_run_comments_model(self):
-        comments = [self._make_comment(status=2, content='THIS IS GOOD') for _ in range(50)]
-        comments += [self._make_comment(status=3, content='THIS IS MALICIOUS') for _ in range(50)]
+        comments = [self._make_comment(status=2, body='THIS IS GOOD') for _ in range(50)]
+        comments += [self._make_comment(status=3, body='THIS IS MALICIOUS') for _ in range(50)]
         data = {
             'samples': comments,
             'name': 'test_model'
@@ -273,14 +273,14 @@ class ServiceTest(unittest.TestCase):
             self.assertTrue(isinstance(v, expected[k]))
 
         # running the model
-        # resp = self._call_pipeline('comments/model/run', data)
-        # self.assertEquals(resp.status_code, 200)
+        resp = self._call_pipeline('comments/model/run', data)
+        self.assertEquals(resp.status_code, 200)
 
-        # expected = {
-            # 'id': int,
-            # 'moderation_prob': float
-        # }
-        # resp_json = json.loads(resp.data.decode('utf-8'))
-        # for result in resp_json['results']:
-            # for k, t in expected.items():
-                # self.assertTrue(isinstance(result[k], t))
+        expected = {
+            'id': int,
+            'moderation_prob': float
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for result in resp_json['results']:
+            for k, t in expected.items():
+                self.assertTrue(isinstance(result[k], t))

@@ -33,8 +33,7 @@ def train(name, vecs, labels):
         model.fit(X_train, y_train)
         pred = model.predict(X_test)
         for metric in mets:
-            print('Y TRUE', y_test)
-            scores[metric].append(getattr(metrics, metric)(pred, y_test))
+            scores[metric].append(getattr(metrics, metric)(y_test, pred))
 
     # compute means for each score
     scores = {metric: np.mean(scores[metric]) for metric in mets}
@@ -59,7 +58,7 @@ def train(name, vecs, labels):
 
 def preprocess(name, comments):
     # labels
-    labels = np.array([True if c['status'] >= 3 else False for c in comments])
+    labels = np.array([True if c['status'] < 3 else False for c in comments])
 
     # simple tfidf vectorization (for now, can enhance later)
     vector = TfidfVectorizer()
