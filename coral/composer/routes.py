@@ -1,6 +1,5 @@
 import random
 import inspect
-from ..models import User
 from ..metrics import user, comment, asset
 from .parser import parse
 from flask import Blueprint, render_template, request, jsonify
@@ -15,7 +14,7 @@ def prep_metrics(module):
     colors = {}
     for f in dir(module):
         func = getattr(module, f)
-        if inspect.isfunction(func) and inspect.getmodule(func) == module:
+        if not f.startswith('_') and inspect.isfunction(func) and inspect.getmodule(func) == module:
             color = '#{:02X}{:02X}{:02X}'.format(
                 random.randint(0,255),
                 random.randint(0,255),
@@ -49,7 +48,7 @@ def index():
 def evaluate():
     data = request.get_json()
     expr = data['expr']
-    users = [User(**d) for id, d in data['users'].items()]
+    users = data['users']
 
     results, texes, expr_tex = parse(expr, users, user_metrics, user_colors)
     return jsonify(

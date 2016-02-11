@@ -31,6 +31,7 @@ Pipelines are intended for working on collections, so most of the operators have
 
 - ``map``
 - ``mapValues``
+- ``forkMap``
 - ``flatMap``
 - ``flatMapValues``
 - ``reduce``
@@ -202,7 +203,7 @@ Pipes and branches can also be executed in a distributed fashion across a cluste
 
 Currently, only a Mesos cluster managed by Zookeeper is supported.
 
-`See here <https://github.com/ftzeng/docker-mesos-pyspark-hdfs>`_ for some Docker files to help you setup a cluster to work with (`see here <http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker>`_ for more details)).
+`See here <https://github.com/frnsys`_ for some Docker files to help you setup a cluster to work with (`see here <http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker>`_ for more details)).
 
 You will likely also want to specify your own configuration. See :ref:`configuration`.
 

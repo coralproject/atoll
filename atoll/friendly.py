@@ -43,18 +43,3 @@ def signature(func):
                 return '(builtin)'
             else:
                 raise
-
-
-def get_example(input):
-    """produce an "example" out of some input"""
-    if isinstance(input, tuple):
-        return '({})'.format(','.join('{}'.format(get_example(i)) for i in input))
-    if isinstance(input, dict):
-        # only get the first 5 items
-        return '{{{}}}'.format(','.join('{}:{}'.format(k, get_example(v)) for k, v in islice(input.items(), 5)))
-    if hasattr(input, '__iter__') and not isinstance(input, str):
-        example = next(iter(input))
-        return '[{},...]'.format(get_example(example))
-    else:
-        example = input
-    return str(example)

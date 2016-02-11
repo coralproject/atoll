@@ -15,9 +15,9 @@ class Readability:
     analyzedVars = {}
 
     def __init__(self, text):
-        self.analyze_text(text)
+        self._analyze_text(text)
 
-    def analyze_text(self, text):
+    def _analyze_text(self, text):
         words = get_words(text)
         char_count = get_char_count(words)
         word_count = len(words)

@@ -2,7 +2,6 @@ import os
 import joblib
 import numpy as np
 from atoll import Pipeline
-from ..metrics import comment
 from collections import defaultdict
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -34,6 +33,7 @@ def train(name, vecs, labels):
         model.fit(X_train, y_train)
         pred = model.predict(X_test)
         for metric in mets:
+            print('Y TRUE', y_test)
             scores[metric].append(getattr(metrics, metric)(pred, y_test))
 
     # compute means for each score
@@ -59,11 +59,11 @@ def train(name, vecs, labels):
 
 def preprocess(name, comments):
     # labels
-    labels = np.array([c.moderated for c in comments])
+    labels = np.array([True if c['status'] >= 3 else False for c in comments])
 
     # simple tfidf vectorization (for now, can enhance later)
     vector = TfidfVectorizer()
-    vecs = vector.fit_transform((c.content for c in comments))
+    vecs = vector.fit_transform((c['body'] for c in comments))
 
     # save vectorizer
     models_path = models_dir()
@@ -71,29 +71,26 @@ def preprocess(name, comments):
 
     return name, vecs, labels
 
-# need to pull apart the POSTed data by keys,
-# TODO this is a little hacky, is there a better way to support this?
-def extract_comments(data):
-    return data['comments']
+def extract_samples(data):
+    return data['samples']
 
 def extract_name(data):
     return data['name']
 
-make_comments = Pipeline().to(extract_comments).map(comment.make)
-train_model = Pipeline(name='train_comments_moderation_model').fork(extract_name, make_comments).to(preprocess).to(train)
+train_model = Pipeline(name='train_comments_moderation_model').fork(extract_name, extract_samples).to(preprocess).to(train)
 
 def run_model(name, comments):
     models_path = models_dir()
     vector = joblib.load('{}/{}_vectorizer.pkl'.format(models_path, name))
-    vecs = vector.transform((c.content for c in comments))
+    vecs = vector.transform((c['body'] for c in comments))
 
     model = joblib.load('{}/{}.pkl'.format(models_path, name))
     probs = model.predict_proba(vecs)
 
     pred = [{
-        'id': c.id,
+        'id': c['_id'],
         'moderation_prob': prob[1]
     } for c, prob in zip(comments, probs)]
     return pred
 
-run_model = Pipeline(name='run_comments_moderation_model').fork(extract_name, make_comments).to(run_model)
+run_model = Pipeline(name='run_comments_moderation_model').fork(extract_name, extract_samples).to(run_model)

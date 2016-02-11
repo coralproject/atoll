@@ -1,9 +1,50 @@
 # atoll
 ### A microservice for data analysis pipelines
 
-## Installation
+## Quickstart
 
-Install via `pip`:
+### Environment
+
+Ensure we have Python 3.4+
+
+If your python environment is pre 3.4+, this will install python3 (on OSX), set up the environment without disrupting your current python install:
+```
+brew install python3
+pip3 install virtualenv
+virtualenv -p python3 ~/env/python3 --no-site-packages
+```
+
+Each time you want to use python3, just
+```
+source env/bin/activate
+```
+
+### Installation
+
+Clone this repo somewhere on your system:
+```
+cd /where/you/want/it
+git clone https://github.com/coralproject/atoll.git
+pip install -r requirements.txt
+```
+
+### Run
+
+```
+python coral.py
+```
+
+The server will then run on port :5001
+
+You should be able to see the docs here:
+
+```
+http://localhost:5001/doc
+```
+
+### Install via `pip`:
+
+_Note: this does not install coral specific modules. This will only give you the pipeline framework!_
 
     pip install git+https://github.com/coralproject/atoll
 
@@ -63,9 +104,11 @@ The provided `run` script makes it easy to get this up and running. Install Dock
 
 ## (Py)Spark support
 
+NOTE: Spark support is EXPERIMENTAL - some `atoll` pipeline operators may not be supported by Spark.
+
 `atoll` can run its pipelines either on a single computer with multiprocessing or across a Spark cluster.
 
-To run a pipeline across a Spark cluster you must have a Spark cluster managed by Zookeeper ([see here](https://github.com/ftzeng/docker-mesos-pyspark-hdfs) for some Docker files to get you going, [see here](http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker) for more details).
+To run a pipeline across a Spark cluster you must have a Spark cluster managed by Zookeeper ([see here](https://github.com/frnsys/docker-mesos-pyspark-hdfs) for some Docker files to get you going, [see here](http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker) for more details).
 
 Additionally, you will likely want to provide a config (see above) which specifies:
 

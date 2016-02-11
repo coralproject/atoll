@@ -37,7 +37,7 @@ __Input__:
         'children': [ ...comments... ],
         'likes': int,
         'starred': bool,
-        'moderated': bool,
+        'status': int,
         'content': str,
         'date_created': isoformat datetime
     }, ...]
