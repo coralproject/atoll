@@ -22,4 +22,3 @@ python-dateutil==2.4.2
 
 # for coral-atoll
 scikit-learn==0.17
-scipy==0.16.1
