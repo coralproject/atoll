@@ -1,0 +1,26 @@
+- name: ensure apt cache is up to date
+  apt: update_cache=yes
+
+- name: install dependencies (system)
+  apt: pkg={{ item }} state=installed
+  with_items:
+      - nginx
+
+ name: remove default nginx site
+  file: path=/etc/nginx/sites-enabled/default state=absent
+
+- name: copy nginx config
+  template: src=nginx.conf dest=/etc/nginx/sites-available/{{ app_name }}.conf
+  notify: restart nginx
+
+- name: enable nginx config (symlink)
+  file: src=/etc/nginx/sites-available/{{ app_name }}.conf dest=/etc/nginx/sites-enabled/{{ app_name }}.conf state=link
+
+- name: copy ssl cert
+  copy: src=ssl/cert.crt dest=/etc/nginx/ssl-bundle.crt
+
+- name: copy ssl key
+  copy: src=ssl/cert.key dest=/etc/nginx/cert.key
+
+- name: ensure nginx is running
+  service: name=nginx enabled=yes state=started
