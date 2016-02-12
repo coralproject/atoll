@@ -1,11 +1,26 @@
 import unittest
+from unittest import skipIf
+from socket import socket
 from atoll import Pipeline
+from atoll.config import EXECUTOR_HOST
+
+
+def check_cluster():
+    try:
+        s = socket()
+        ip, port = EXECUTOR_HOST.split(':')
+        s.connect((ip, int(port)))
+        s.close()
+        return True
+    except OSError:
+        return False
 
 
 def prod(x, y):
     return x*y
 
 
+@skipIf(not check_cluster(), 'could not connect to cluster executor')
 class DistributedTest(unittest.TestCase):
     def test_to(self):
         pipeline = Pipeline().map(lambda x: x + 2).to(lambda x: sum(x))
