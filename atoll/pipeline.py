@@ -1,4 +1,3 @@
-import random
 import logging
 from hashlib import md5
 from itertools import chain
@@ -67,20 +66,9 @@ class Pipeline(Pipe):
         Used if the pipeline is nested in another.
         This prevents nested pipelines from running their own parallel processes.
         """
-        print('CALLED FUNC')
-        out = self(input, distributed=distributed, nested=True, **kwargs)
-        print("OUTPUT", out)
-        return out
+        return self(input, distributed=distributed, nested=True, **kwargs)
 
-    def __call__(self, input, n_jobs=1, serial=False, distributed=False, validate=False, nested=False, **kwargs):
-        """
-        Specify `validate=True` to first
-        check the pipeline with a random sample from the input
-        before running on the entire input.
-        """
-        if validate and not nested:
-            self.validate(input, n_jobs=n_jobs)
-
+    def __call__(self, input, n_jobs=1, serial=False, distributed=False, nested=False, **kwargs):
         if distributed:
             return distrib.compute_pipeline(self.pipes, input, **kwargs)
 
@@ -122,18 +110,6 @@ class Pipeline(Pipe):
         but note that it does not (yet) account for stochastic pipes!
         """
         return md5('->'.join(['{}:{}'.format(op, pipe) for op, pipe in self.pipes]).encode('utf-8')).hexdigest()
-
-    def validate(self, data, n_jobs=1, n=1):
-        """
-        Approximately validate the pipeline
-        using a "canary" method, i.e. compute on
-        a random sample and see if it doesn't break.
-
-        Does not guarantee that the pipeline will run
-        without error, but a good approximation.
-        """
-        sample = random.sample(data, n)
-        self(sample, n_jobs=n_jobs, validate=False)
 
     @composition
     def to(self, func, *args, **kwargs):

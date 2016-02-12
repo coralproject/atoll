@@ -169,26 +169,6 @@ You could define a pipeline for each that can properly handle each dataset's for
     # >>> 10
 
 
-Pipeline validation
--------------------
-
-If you are about to process a lot of data, you don't want runtime errors occuring deep in your pipeline.
-
-To help mitigate this, you can "validate" a pipeline by either passing in your data to the pipeline's ``validate`` method:
-
-.. code-block:: python
-
-    pipeline.validate(data)
-
-Or by running your pipeline with ``validate=True``:
-
-.. code-block:: python
-
-    pipeline(data, validate=True)
-
-This will draw a random sample from your dataset and try running the pipeline.
-
-
 Parallelization and distributed computing
 -----------------------------------------
 
