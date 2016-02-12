@@ -1,4 +1,3 @@
 worker_broker: '{{ worker_broker }}'
 worker_backend: '{{ worker_backend }}'
-spark_binary: '{{ spark_binary }}'
-zookeeper_host: '{{ zookeeper_host }}'
+executor_host: '{{ executor_host }}'
