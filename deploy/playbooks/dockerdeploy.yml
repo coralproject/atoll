@@ -7,7 +7,7 @@
     - role: angstwad.docker_ubuntu
       pip_version_docker_py: 1.2.3 # fix for <https://github.com/ansible/ansible-docker-base/issues/19>
     - role: web
-  tasks:
+  post_tasks:
     - name: atoll docker container
       docker:
           name: atoll
