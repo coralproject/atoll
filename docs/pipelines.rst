@@ -109,6 +109,20 @@ We can also ``reduce`` the results of branching pipelines if we want:
     results = reduced_pipeline(data)
     # >>> [6,9,1,1]
 
+In addition to ``fork`` and ``forkMap``, there are also the ``split`` and ``splitMap`` operators. If the output of the previous pipe is a collection, these operators take each element from that collection and send it to a different function. For example:
+
+.. code-block:: python
+
+    def double(x):
+        return x*2
+
+    def triple(x):
+        return x*3
+
+    pipeline = Pipeline().forkMap(double, triple).split(len, sum)
+    results = pipeline([1,2,3,4])
+    # >>> [4, 30]
+
 
 Identity pipes
 --------------
