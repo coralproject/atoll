@@ -17,6 +17,8 @@ def d(input1, input2):
 def double(input):
     return 2*input
 
+def triple(input):
+    return 3*input
 
 class BranchingPipelineTests(unittest.TestCase):
     def test_fork_branching_pipeline(self):
@@ -49,9 +51,9 @@ class BranchingPipelineTests(unittest.TestCase):
         self.assertEqual(out, ([4,5,6,7], [5,6,7,8]))
 
     def test_fork_map(self):
-        p = Pipeline().forkMap(double, double)
+        p = Pipeline().forkMap(double, triple)
         out = p([1,2,3,4])
-        self.assertEqual(out, ([2,4,6,8], [2,4,6,8]))
+        self.assertEqual(out, ([2,4,6,8], [3,6,9,12]))
 
     def test_split(self):
         p = Pipeline().split(double, double)
