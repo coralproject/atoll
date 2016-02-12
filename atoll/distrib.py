@@ -1,10 +1,8 @@
-# from atoll.config import EXECUTOR_HOST
-from functools import partial
 from itertools import chain
+from functools import partial
 from distributed import Executor
 from atoll.pipes import Branches
-
-EXECUTOR_HOST = '127.0.0.1:8786'
+from atoll.config import EXECUTOR_HOST
 
 
 def prep_func(pipe, **kwargs):

@@ -9,11 +9,7 @@ import yaml
 conf = {
     'worker_broker': 'amqp://guest:guest@localhost/',
     'worker_backend': 'amqp',
-
-    # this must be a _prebuilt_ spark archive, i.e. a spark binary package
-    # you can build it and host it yourself if you like.
-    'spark_binary': 'http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz',
-    'zookeeper_host': '172.17.0.1:2181'
+    'executor_host': '127.0.0.1:8786'
 }
 
 user_conf_path = os.environ.get('ATOLL_CONF', None)
