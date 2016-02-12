@@ -5,6 +5,7 @@ from itertools import chain
 from functools import partial
 from joblib import Parallel, delayed
 from atoll import distrib
+from atoll.utility import prep_func
 from atoll.pipes import Pipe, Branches
 
 
@@ -40,23 +41,6 @@ def branching(f):
         self.pipes.append((f.__name__, branches))
         return self
     return decorated
-
-
-def prep_func(pipe, **kwargs):
-    """
-    Prepares a pipe's function or branches
-    by returning a partial function with its kwargs.
-    """
-    if isinstance(pipe, Branches):
-        return [prep_func(b) for b in pipe.branches]
-    else:
-        kwargs_ = {}
-        for key in pipe.expected_kwargs:
-            try:
-                kwargs_[key] = kwargs[key]
-            except KeyError:
-                raise KeyError('Missing expected keyword argument: {}'.format(key))
-        return partial(pipe._func, **kwargs_)
 
 
 def kv_func(f, k, v):

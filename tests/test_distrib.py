@@ -1,6 +1,7 @@
 import unittest
 from atoll import Pipeline
 
+
 def prod(x, y):
     return x*y
 
