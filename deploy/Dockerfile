@@ -24,7 +24,7 @@ RUN ansible-playbook -i /tmp/atoll/deploy/hosts.ini /tmp/atoll/deploy/playbooks/
 RUN service supervisor stop
 RUN rm -rf /tmp/atoll
 
-# expose ports 22->ssh
-EXPOSE 22
+# expose ports 22->ssh 8181->atoll
+EXPOSE 22 8181
 
 CMD ["supervisord", "-n"]

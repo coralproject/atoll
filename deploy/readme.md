@@ -52,13 +52,7 @@ You can build the `atoll` Docker image by running the following from this direct
 
     docker build .
 
-Then you can run the Docker container with:
-
-    docker run -v /tmp:/tmp <IMAGE>
-
-to mount the host's `/tmp` so that the unix socket is available at `/tmp/coral.sock`.
-
-You can then use `nginx` (for example) in the host to connect to this unix socket.
+`atoll` is exposed on port 8181 of the container.
 
 ## Notes
 
