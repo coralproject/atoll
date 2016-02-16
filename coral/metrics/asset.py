@@ -75,7 +75,7 @@ def _unique_participants(thread):
     return users, n_replies
 
 
-def reconstruct_threads(asset):
+def _reconstruct_threads(asset):
     """reconstruct threads structure from a flat list of comments"""
     id = asset['_id']
     parents = defaultdict(list)
