@@ -5,7 +5,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='atoll',
-    version='0.0.1',
+    version='0.9.0',
     description='data analysis pipelines',
     url='https://github.com/coralproject/atoll',
     author='The Coral Project',

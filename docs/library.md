@@ -16,6 +16,19 @@ Input: [Comment|User|...]
 Output: { [name]: [value with type/range info] }
 ```
 
+Note that `atoll` only computes metrics for which the necessary keys are available. For instance, if some metric requires that an entity has an `actions` field, and it is not present, that metric will be skipped.
+
+For the basic scoring endpoints, e.g. `/<entity>/score`, the response has JSON data in the following format:
+
+```
+{
+    'results': {
+        'collection': [{...}], # computed metrics for each entity
+        'aggregates': {...}    # aggregate statistics for each metric across the entire collection (e.g. mean, max, min, std, etc)
+    }
+}
+```
+
 ---
 
 ## Users pipeline
@@ -286,3 +299,63 @@ __Description__: estimates the length of a new thread started for this asset.
 __Technical Description__: The diversity score is computed using a Gamma-Poisson model based on the length of the threads for this asset so far. The prior is parameterized with `shape=1, scale=2`.
 
 __Range__: `[0, +infinity)`, more is better
+
+---
+
+## NLP Endpoints
+
+There is support for training and running NLP models.
+
+At this point, the only model available is a comments moderation probability model (logistic regression), based on simple word usage.
+
+Two endpoints are exposed for this:
+
+- `/comments/model/moderation/train`. POST a collection of comments and a model name, e.g. `{'data': [ ...comments...], 'name': 'my_comments_model'}` to train the model. A response consisting of the following is returned:
+
+    {'results': {
+        'performance': {...},   # scores for the model, such as ROC AUC
+        'n_samples': int,       # number of samples you submitted
+        'notes': [...],         # any notes, such as suggestions
+        'name': str             # the name of the model
+    }}
+
+- `/comments/model/moderation/run` POST a collection of comments and a model name, e.g. `{'data': [ ...comments...], 'name': 'my_comments_model'}` to run the model. A response consisting of the following is returned:
+
+    {'results': [{
+        'id': int,      # id of the comment
+        'prob': float   # probability that the comment would be moderated
+    }, ...]}
+
+## Taxonomy endpoints
+
+Comments and assets can be broken down by taxonomy (e.g. tags) and have metrics computed aggregately over these groups.
+
+The two endpoints for this are:
+
+- `assets/score/taxonomy`
+- `comments/score/taxonomy`
+
+You POST collections to these endpoints like you would for the basic scoring endpoints, but the response takes the format:
+
+    {'results': {
+        'sometag': { ... }, # metric aggregates, e.g. mean, std, etc
+        'someothertag': { ... },
+        ...
+    }}
+
+## Rolling metrics
+
+For users, rolling metrics may be computed, so that their metrics can be updated without sending their entire history of data.
+
+The endpoint for this is:
+
+- `/users/rolling`
+
+This requires data to be POSTed with the following form:
+
+    {'data': [{
+        'update': { ... }   # latest data for the user
+        'prev': { ... }     # the previously computed metrics for the user
+    }, ...]}
+
+Then it returns data in the same format as the regular user scoring endpoint.

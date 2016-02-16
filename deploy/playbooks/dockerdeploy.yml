@@ -1,0 +1,20 @@
+- hosts: '{{ env }}'
+  sudo: yes
+  remote_user: '{{ remote_user }}'
+  vars:
+      app_name: coral
+  roles:
+    - role: angstwad.docker_ubuntu
+      pip_version_docker_py: 1.2.3 # fix for <https://github.com/ansible/ansible-docker-base/issues/19>
+    - role: web
+  post_tasks:
+    - name: atoll docker container
+      docker:
+          name: atoll
+          image: coralproject/atoll
+          state: reloaded
+          pull: missing
+          volumes:
+              - '/tmp:/tmp'
+    - name: ensure nginx is restarted
+      service: name=nginx enabled=yes state=restarted

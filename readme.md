@@ -1,56 +1,21 @@
 # atoll
 ### A microservice for data analysis pipelines
 
-## Quickstart
+`atoll` requires Python 3.4+.
 
-### Environment
+Note that the `coral` package defines a Coral-specific instance of `atoll` (with community-related metrics and so on), where as `atoll` is the base library which implements "pipelines-as-a-service".
 
-Ensure we have Python 3.4+
+The available metrics for `coral` can be found in [docs/library.md](docs/library.md).
 
-If your python environment is pre 3.4+, this will install python3 (on OSX), set up the environment without disrupting your current python install:
-```
-brew install python3
-pip3 install virtualenv
-virtualenv -p python3 ~/env/python3 --no-site-packages
-```
+## Installation
 
-Each time you want to use python3, just
-```
-source env/bin/activate
-```
-
-### Installation
-
-Clone this repo somewhere on your system:
-```
-cd /where/you/want/it
-git clone https://github.com/coralproject/atoll.git
-pip install -r requirements.txt
-```
-
-### Run
-
-```
-python coral.py
-```
-
-The server will then run on port :5001
-
-You should be able to see the docs here:
-
-```
-http://localhost:5001/doc
-```
-
-### Install via `pip`:
-
-_Note: this does not install coral specific modules. This will only give you the pipeline framework!_
+You can use `atoll` in your own projects as well! Install the latest version like so (at this point in development, the PyPi version may not be up-to-date):
 
     pip install git+https://github.com/coralproject/atoll
 
-`atoll` supports Python 3.4+
+_Note: this does not install Coral-specific modules. This will only give you the pipeline framework!_
 
-## Setup
+## Configuration
 
 When running `atoll` as a microservice, you can specify a YAML config file by setting the `ATOLL_CONF` env variable, e.g.
 
@@ -61,26 +26,14 @@ The default configuration is:
 ```yaml
 worker_broker: amqp://guest:guest@localhost/
 worker_backend: amqp
-
-# this must be a _prebuilt_ spark archive, i.e. a spark binary package
-# you can build it and host it yourself if you like.
-spark_binary: http://d3kbcqa49mib13.cloudfront.net/spark-1.5.0-bin-hadoop2.6.tgz
-zookeeper_host: 172.17.0.1:2181
+executor_host: 127.0.0.1:8786
 ```
 
-## Usage
+The `worker_broker` and `worker_backend` options define how `celery`, which is used to handle requests, is configured.
 
-See the docs: (hosted docs coming soon)
+The `executor_host` is for distributed computation of pipelines - see the "Distributed" section below.
 
-For now, you can build them yourself:
-
-    git submodule update --init
-    cd docs
-    make clean; make html
-
-Then open `_build/html/index.html`
-
-## Development
+## Setup
 
 If you are running the microservice and using asynchronous requests (i.e. callbacks), you need a Celery stack.
 
@@ -102,25 +55,17 @@ The provided `run` script makes it easy to get this up and running. Install Dock
     # Spin down the stack
     ./run stop
 
-## (Py)Spark support
+## Distributed computing support
 
-NOTE: Spark support is EXPERIMENTAL - some `atoll` pipeline operators may not be supported by Spark.
+NOTE: Distributed computing support is still somewhat experimental, at this moment it supports the full `atoll` pipeline API but its stability is not guaranteed.
 
-`atoll` can run its pipelines either on a single computer with multiprocessing or across a Spark cluster.
+`atoll` can run its pipelines either on a single computer with multiprocessing or across a cluster (using the [`distributed`](https://github.com/dask/distributed) library).
 
-To run a pipeline across a Spark cluster you must have a Spark cluster managed by Zookeeper ([see here](https://github.com/frnsys/docker-mesos-pyspark-hdfs) for some Docker files to get you going, [see here](http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker) for more details).
+To run pipelines across a cluster, you will need to provide the following configuration option:
 
-Additionally, you will likely want to provide a config (see above) which specifies:
-
-- `spark_binary`: Where to fetch a Spark binary archive
-- `zookeeper_host`: The `ip:port` of your Zookeeper host
+- `executor_host`: where the cluster executor is, by default, `127.0.0.1:8786`
 
 See the config above for an example.
-
-Note that if you are using Docker for your cluster, you may need to export the following env variables before running your pipeline:
-
-    export LIBPROCESS_IP=$(ifconfig docker0 | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}')
-    export PYSPARK_PYTHON=/usr/bin/python3
 
 Then, to run a pipeline on the cluster, just pass `distributed=True` when calling the pipeline, e.g:
 
@@ -129,7 +74,17 @@ pipeline = Pipeline().map(foo).map(bar)
 results = pipeline(input, distributed=True)
 ```
 
-This support is still being worked on; it currently only supports Mesos clusters.
+### Setting up a cluster
+
+Setting up a cluster is fairly easy - just setup the necessary (virtual) environment on and passwordless SSH access to each worker node.
+
+Then, from the leader (i.e. the executor) machine, run:
+
+    dcluster <worker ip> <worker ip> ...
+
+The IP of this executor machine is what goes in the `executor_host` configuration option.
+
+Refer to the [`distributed` documentation](http://distributed.readthedocs.org/en/latest/quickstart.html) for more details.
 
 ## Deployment
 
@@ -146,6 +101,52 @@ Then you should be able to run `deploy.sh <ENV NAME>` to deploy the Coral Atoll 
 Once you deploy, you can run `test.py` to sanity-check that the service is working properly.
 
 See `deploy/readme.md` for more info.
+
+## Documentation
+
+See the docs: (hosted docs coming soon)
+
+For now, you can build them yourself:
+
+    git submodule update --init
+    cd docs
+    make clean; make html
+
+Then open `_build/html/index.html`
+
+
+## Development
+
+If you are interested in contributing to `atoll`, great! Here's how you can get it setup for development.
+
+Ensure that you have Python 3.4 or later installed on your system.
+
+For OSX, this can be accomplished with `brew`:
+
+    brew install python3
+
+A virtual environment is recommended as well:
+
+    pip3 install virtualenv
+    virtualenv -p python3 ~/env/atoll --no-site-packages
+
+Then activate the `virtualenv`:
+
+    source ~/env/atoll/bin/activate
+
+Then clone this repo somewhere on your system:
+
+    git clone https://github.com/coralproject/atoll.git
+
+Install the requirements:
+
+    pip install -r requirements.txt
+
+To run the `coral-atoll` instance, change into the repo directory and run:
+
+    python coral.py
+
+The server will then run at `localhost:5001`.
 
 ---
 

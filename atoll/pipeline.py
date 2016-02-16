@@ -1,11 +1,11 @@
-import random
 import logging
 from hashlib import md5
 from itertools import chain
 from functools import partial
 from joblib import Parallel, delayed
+from atoll import distrib
+from atoll.utility import prep_func
 from atoll.pipes import Pipe, Branches
-from atoll.distrib import spark_context, is_rdd
 
 
 logger = logging.getLogger(__name__)
@@ -42,25 +42,10 @@ def branching(f):
     return decorated
 
 
-def prep_func(pipe, **kwargs):
-    """
-    Prepares a pipe's function or branches
-    by returning a partial function with its kwargs.
-    """
-    if isinstance(pipe, Branches):
-        return [prep_func(b) for b in pipe.branches]
-    else:
-        kwargs_ = {}
-        for key in pipe.expected_kwargs:
-            try:
-                kwargs_[key] = kwargs[key]
-            except KeyError:
-                raise KeyError('Missing expected keyword argument: {}'.format(key))
-        return partial(pipe._func, **kwargs_)
-
 def kv_func(f, k, v):
     """helper to apply function `f` to value `v`"""
     return k, f(v)
+
 
 def execution(f):
     """decorates the function which executes a corresponding pipe"""
@@ -83,44 +68,9 @@ class Pipeline(Pipe):
         """
         return self(input, distributed=distributed, nested=True, **kwargs)
 
-    def __call__(self, input, n_jobs=1, serial=False, distributed=False, validate=False, nested=False, **kwargs):
-        """
-        Specify `validate=True` to first
-        check the pipeline with a random sample from the input
-        before running on the entire input.
-        """
-        if validate and not nested:
-            self.validate(input, n_jobs=n_jobs)
-
+    def __call__(self, input, n_jobs=1, serial=False, distributed=False, nested=False, **kwargs):
         if distributed:
-            rdd = input
-            # create RDD from input if necessary
-            if not is_rdd(input):
-                sc = spark_context(self.name)
-                n_jobs = None if n_jobs <= 0 else n_jobs
-                rdd = sc.parallelize(input, n_jobs)
-
-            # run the pipes
-            for op, pipe in self.pipes:
-                func = prep_func(pipe, **kwargs)
-                if op == 'fork':
-                    # cache the current RDD
-                    rdd.cache()
-
-                    # bleh, build out each branch as an RDD,
-                    # then we have to (afaik) collect their results
-                    # then build a new rdd out of that
-                    rdds = [branch(rdd, distributed=True) for branch in func]
-                    rdd = sc.parallelize([r.collect() if is_rdd(r) else r for r in rdds], n_jobs)
-                elif op == 'to':
-                    # the `to` operation requires the resulting dataset
-                    # so we have to collect the results (if necessary)
-                    # we don't create the new RDD, we'll let the next
-                    # iteration do so if necessary
-                    rdd = self._to(pipe, rdd.collect() if is_rdd(rdd) else rdd, **kwargs)
-                else:
-                    rdd = getattr(rdd, op)(func)
-            return rdd.collect() if is_rdd(rdd) else rdd
+            return distrib.compute_pipeline(self.pipes, input, **kwargs)
 
         else:
             if nested or serial:
@@ -160,18 +110,6 @@ class Pipeline(Pipe):
         but note that it does not (yet) account for stochastic pipes!
         """
         return md5('->'.join(['{}:{}'.format(op, pipe) for op, pipe in self.pipes]).encode('utf-8')).hexdigest()
-
-    def validate(self, data, n_jobs=1, n=1):
-        """
-        Approximately validate the pipeline
-        using a "canary" method, i.e. compute on
-        a random sample and see if it doesn't break.
-
-        Does not guarantee that the pipeline will run
-        without error, but a good approximation.
-        """
-        sample = random.sample(data, n)
-        self(sample, n_jobs=n_jobs, validate=False)
 
     @composition
     def to(self, func, *args, **kwargs):

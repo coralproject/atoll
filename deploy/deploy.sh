@@ -10,4 +10,5 @@ export ANSIBLE_SQUASH_ACTIONS="pkgng"
 
 # deploy coral atoll instance
 ansible-playbook -i hosts.ini playbooks/coral.yml -e "env=${DEPLOY_ENV}" #-vvvv
+#ansible-playbook -i hosts.ini playbooks/dockerdeploy.yml -e "env=${DEPLOY_ENV}" #-vvvv
 ansible-playbook -i hosts.ini playbooks/infra.yml -e "env=${DEPLOY_ENV}" #-vvvv

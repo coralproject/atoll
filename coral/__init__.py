@@ -40,7 +40,7 @@ score_comments_by_taxonomy = Pipeline(name='score_comments_by_taxonomy')\
 coral.register_pipeline('/comments/score/taxonomy', score_comments_by_taxonomy)
 
 score_assets = Pipeline(name='score_assets')\
-    .map(asset.reconstruct_threads)\
+    .map(asset._reconstruct_threads)\
     .forkMap(
         partial(apply_metric, metric=asset.discussion_score),
         partial(apply_metric, metric=asset.diversity_score)

@@ -109,6 +109,20 @@ We can also ``reduce`` the results of branching pipelines if we want:
     results = reduced_pipeline(data)
     # >>> [6,9,1,1]
 
+In addition to ``fork`` and ``forkMap``, there are also the ``split`` and ``splitMap`` operators. If the output of the previous pipe is a collection, these operators take each element from that collection and send it to a different function. For example:
+
+.. code-block:: python
+
+    def double(x):
+        return x*2
+
+    def triple(x):
+        return x*3
+
+    pipeline = Pipeline().forkMap(double, triple).split(len, sum)
+    results = pipeline([1,2,3,4])
+    # >>> [4, 30]
+
 
 Identity pipes
 --------------
@@ -169,26 +183,6 @@ You could define a pipeline for each that can properly handle each dataset's for
     # >>> 10
 
 
-Pipeline validation
--------------------
-
-If you are about to process a lot of data, you don't want runtime errors occuring deep in your pipeline.
-
-To help mitigate this, you can "validate" a pipeline by either passing in your data to the pipeline's ``validate`` method:
-
-.. code-block:: python
-
-    pipeline.validate(data)
-
-Or by running your pipeline with ``validate=True``:
-
-.. code-block:: python
-
-    pipeline(data, validate=True)
-
-This will draw a random sample from your dataset and try running the pipeline.
-
-
 Parallelization and distributed computing
 -----------------------------------------
 
@@ -199,20 +193,9 @@ Pipes and branches in a pipelines can be executed in parallel (using multiproces
     results_a, results_b = branching_pipeline(data, n_jobs=2)
     # >>> [6,9], [1,1]
 
-Pipes and branches can also be executed in a distributed fashion across a cluster by using (Py)Spark.
+Pipes and branches can also be executed in a distributed fashion across a cluster using the ``distributed`` library.
 
-Currently, only a Mesos cluster managed by Zookeeper is supported.
-
-`See here <https://github.com/frnsys`_ for some Docker files to help you setup a cluster to work with (`see here <http://spaceandtim.es/code/mesos_spark_zookeeper_hdfs_docker>`_ for more details)).
-
-You will likely also want to specify your own configuration. See :ref:`configuration`.
-
-Note that if you are using Docker for your cluster, you may need to export the following env variables before running your pipeline:
-
-.. code-block:: bash
-
-    export LIBPROCESS_IP=$(ifconfig docker0 | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}')
-    export PYSPARK_PYTHON=/usr/bin/python3
+You will likely also want to specify your own configuration. See :ref:`configuration`. Then main configuration option is where the executor host is (by default, it assumes ``127.0.0.1:8786``).
 
 Then, to run a pipeline on the cluster, just pass ``distributed=True`` when calling the pipeline, e.g:
 

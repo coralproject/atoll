@@ -46,6 +46,14 @@ After deploying, check the service is working correctly:
 
     python test.py <SERVER IP OR HOSTNAME>
 
+## Docker container
+
+You can build the `atoll` Docker image by running the following from this directory:
+
+    docker build .
+
+`atoll` is exposed on port 8181 of the container.
+
 ## Notes
 
 Deployment has been tested with Ansible 2.0.0.2.
