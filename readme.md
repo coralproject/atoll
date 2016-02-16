@@ -3,6 +3,10 @@
 
 `atoll` requires Python 3.4+.
 
+Note that the `coral` package defines a Coral-specific instance of `atoll` (with community-related metrics and so on), where as `atoll` is the base library which implements "pipelines-as-a-service".
+
+The available metrics for `coral` can be found in [docs/library.md](docs/library.md).
+
 ## Installation
 
 You can use `atoll` in your own projects as well! Install the latest version like so (at this point in development, the PyPi version may not be up-to-date):
