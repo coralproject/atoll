@@ -80,7 +80,7 @@ def _reconstruct_threads(asset):
     id = asset['_id']
     parents = defaultdict(list)
     for c in asset['comments']:
-        p_id = c['parent_id'] # TODO mongo ids y/n?
+        p_id = c['parent_id']
         if isinstance(p_id, float) and math.isnan(p_id):
             p_id = id
         parents[p_id].append(c)

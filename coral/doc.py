@@ -37,7 +37,6 @@ def prep_metrics(module, lang):
             # parse the metric metadata from its docstring
             # should be yaml
             meta = yaml.load(func.__doc__)
-            print(meta)
 
             # extract localized description (if one exists)
             # defaults to english, or None if there is no description at all.

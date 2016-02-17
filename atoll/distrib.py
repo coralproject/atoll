@@ -44,7 +44,7 @@ def fork(executor, fs, input):
 
 
 def forkMap(executor, fs, input):
-    # TODO for some reason the executor thinks each function is identical
+    # for some reason the executor thinks each function is identical
     # wrapping the function in this way solves the problem
     return [executor.submit(_identity(f), input) for f in fs]
 
