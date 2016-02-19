@@ -7,4 +7,3 @@ worker_broker: amqp://guest:guest@localhost/
 worker_backend: amqp
 executor_host: 127.0.0.1:8786
 config_path: /var/www/atoll/config.yml
-host_name: localhost
