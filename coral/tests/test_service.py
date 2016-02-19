@@ -150,7 +150,6 @@ class ServiceTest(unittest.TestCase):
             'readability_scores': dict
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
-        print(resp_json)
         for result in resp_json['results']['collection']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
@@ -287,3 +286,30 @@ class ServiceTest(unittest.TestCase):
         for result in resp_json['results']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
+
+    def test_metric_exception(self):
+        self.app = coral.create_app(**{'TESTING': False})
+        self.client = self.app.test_client()
+
+        data = [
+            self._make_comment(n_replies=2, depth=1),
+            self._make_comment(n_replies=2, depth=1),
+        ]
+
+        # munge the data to incorrect form
+        for comment in data:
+            del comment['_id']
+
+        resp = self._call_pipeline('comments/score', data)
+        self.assertEquals(resp.status_code, 500)
+
+        expected = {
+            'metric': str,
+            'type': str,
+            'message': str,
+            'data': list
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for k, t in expected.items():
+            self.assertTrue(isinstance(resp_json[k], t))
+

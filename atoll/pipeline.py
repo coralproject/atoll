@@ -6,6 +6,7 @@ from joblib import Parallel, delayed
 from atoll import distrib
 from atoll.utility import prep_func
 from atoll.pipes import Pipe, Branches
+from atoll.exceptions import InvalidInputError
 
 
 logger = logging.getLogger(__name__)
@@ -42,17 +43,28 @@ def branching(f):
     return decorated
 
 
-def kv_func(f, k, v):
-    """helper to apply function `f` to value `v`"""
-    return k, f(v)
-
-
 def execution(f):
     """decorates the function which executes a corresponding pipe"""
     def decorated(self, pipe, input, **kwargs):
         func = prep_func(pipe, **kwargs)
         return f(self, func, input)
     return decorated
+
+
+def validate_input(*types):
+    def decorated(f):
+        def wrapped(self, func, input, *args, **kwargs):
+            if not isinstance(input, types):
+                raise InvalidInputError('Error running pipe "{}", input is not one of: {}'.format(
+                    func, [t.__name__ for t in types]))
+            return f(self, func, input, *args, **kwargs)
+        return wrapped
+    return decorated
+
+
+def kv_func(f, k, v):
+    """helper to apply function `f` to value `v`"""
+    return k, f(v)
 
 
 class Pipeline(Pipe):
@@ -84,7 +96,9 @@ class Pipeline(Pipe):
             for op, pipe in self.pipes:
                 try:
                     input = getattr(self, '_' + op)(pipe, input, **kwargs)
-                except:
+                except Exception as e:
+                    # attach the data the pipeline failed on
+                    e.data = input
                     logger.exception('Failed to execute pipe "{}{}"'.format(
                         pipe, pipe.sig))
                     raise
@@ -184,18 +198,21 @@ class Pipeline(Pipe):
             input = args
         return func(*input)
 
+    @validate_input(list, tuple)
     @execution
     def _map(self, func, input):
         if not isinstance(input[0], tuple):
             input = [(i,) for i in input]
         return self.executor(self.funcproc(func)(*i) for i in input)
 
+    @validate_input(list, tuple)
     @execution
     def _flatMap(self, func, input):
         if not isinstance(input[0], tuple):
             input = [(i,) for i in input]
         return [result for result in chain(*self.executor(self.funcproc(func)(*i) for i in input))]
 
+    @validate_input(list, dict, tuple)
     @execution
     def _mapValues(self, func, input):
         if isinstance(input, dict):
@@ -205,6 +222,7 @@ class Pipeline(Pipe):
         func = partial(kv_func, func)
         return self.executor(self.funcproc(func)(k, v) for k, v in input)
 
+    @validate_input(list, dict, tuple)
     @execution
     def _flatMapValues(self, func, input):
         if isinstance(input, dict):
@@ -216,6 +234,7 @@ class Pipeline(Pipe):
                 chain(*[[(k, v) for v in vs] for k, vs in
                         self.executor(self.funcproc(func)(*i) for i in input)])]
 
+    @validate_input(list, tuple)
     @execution
     def _reduce(self, func, input):
         output = input[0]
@@ -223,6 +242,7 @@ class Pipeline(Pipe):
             output = func(output, i)
         return output
 
+    @validate_input(list, dict, tuple)
     @execution
     def _reduceByKey(self, func, input):
         if isinstance(input, dict):
@@ -244,10 +264,12 @@ class Pipeline(Pipe):
     def _forkMap(self, funcs, input):
         return tuple(self.executor(self.funcproc(func)(input) for func in funcs))
 
+    @validate_input(list, tuple)
     @execution
     def _split(self, funcs, input):
         return tuple(self.executor(self.funcproc(f)(i) for f, i in zip(funcs, input)))
 
+    @validate_input(list, tuple)
     @execution
     def _splitMap(self, funcs, input):
         return tuple(self.executor(self.funcproc(f)(i) for f, i in zip(funcs, input)))
