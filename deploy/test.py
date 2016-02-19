@@ -12,8 +12,10 @@ data = [{
         '_id': 0,
         'user_id': 0,
         'content': 'foo',
-        'actions': [{'type': 'likes', 'value': 10}],
-        'starred': False,
+        'actions': [
+            {'type': 'likes', 'value': 10},
+            {'type': 'starred', 'value': False}
+        ],
         'status': 3,
         'children': [],
         'date_created': datetime.today().isoformat(),
@@ -25,8 +27,10 @@ data = [{
         '_id': 1,
         'user_id': 1,
         'content': 'bar',
-        'actions': [{'type': 'likes', 'value': 20}],
-        'starred': True,
+        'actions': [
+            {'type': 'likes', 'value': 20},
+            {'type': 'starred', 'value': True}
+        ],
         'status': 2,
         'children': [],
         'date_created': datetime.today().isoformat(),

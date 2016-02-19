@@ -65,3 +65,6 @@ coral.register_pipeline('/users/rolling', rolling_score_users)
 
 from .doc import bp as doc_bp
 coral.blueprints.append(doc_bp)
+
+from .errors import bp as err_bp
+coral.blueprints.append(err_bp)

@@ -24,11 +24,11 @@ def community_score(user, k=1, theta=2):
     return gamma_poission_model(X, n, k, theta, 0.05)
 
 
-@requires_keys('comments[].starred')
+@requires_keys('comments[].actions')
 def organization_score(user, alpha=2, beta=2):
     """
     description:
-        en: Probability that a comment by this user will be an editor's pick.
+        en: Probability that a comment by this user will be an editor's pick (starred).
         de: Wahrscheinlichkeit, dass ein Kommentar dieses Benutzers holen eines Editors können.
     type: float
     valid: probability
@@ -36,7 +36,7 @@ def organization_score(user, alpha=2, beta=2):
     # assume whether or not a comment is starred
     # is drawn from a binomial distribution parameterized by n, p
     # n is known, we want to estimate p
-    y = sum(1 for c in user['comments'] if c.get('starred', False))
+    y = sum(sum(_action_vals(c['actions'], 'starred')) for c in user['comments'])
     n = len(user['comments'])
 
     # again, to be conservative, we take the lower-bound

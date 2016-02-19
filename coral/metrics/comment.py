@@ -2,7 +2,7 @@ from .readability import Readability
 from .common import beta_binomial_model, requires_keys
 
 
-@requires_keys('children[].user')
+@requires_keys('children[].user_id')
 def diversity_score(comment, alpha=2, beta=2):
     """
     description:
@@ -14,9 +14,9 @@ def diversity_score(comment, alpha=2, beta=2):
     seen_users = set()
     unique_participants = []
     for r in comment['children']:
-        if r['user'] not in seen_users:
+        if r['user_id'] not in seen_users:
             unique_participants.append(1)
-            seen_users.add(r['user'])
+            seen_users.add(r['user_id'])
         else:
             unique_participants.append(0)
 

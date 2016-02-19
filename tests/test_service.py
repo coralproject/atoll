@@ -57,3 +57,25 @@ class ServiceTest(unittest.TestCase):
             'results': ['aa', 'bb'],
             'error': None
         }, resp_json)
+
+    def test_invalid_input_exception(self):
+        # create a client with TESTING=False so we get error responses
+        self.app = create_app(**{'TESTING': False})
+        self.app.register_blueprint(pipeline_bp)
+        self.client = self.app.test_client()
+
+        headers = [('Content-Type', 'application/json')]
+        resp = self.client.post('/pipelines/example', data=json.dumps({
+            # munge the data to incorrect form (dict instead of a list)
+            'data': {'foobar': ['AA', 'BB']}
+        }), headers=headers)
+        self.assertEquals(resp.status_code, 500)
+
+        expected = {
+            'type': str,
+            'message': str,
+            'data': dict
+        }
+        resp_json = json.loads(resp.data.decode('utf-8'))
+        for k, t in expected.items():
+            self.assertTrue(isinstance(resp_json[k], t))

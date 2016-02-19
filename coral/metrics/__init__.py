@@ -2,11 +2,26 @@ import numpy as np
 from collections import defaultdict
 
 
+class MetricException(Exception):
+    def __init__(self, original_exp, metric, data):
+        message = str(original_exp)
+        super().__init__(message)
+        self.message = message
+        self.metric = metric
+        self.data = data
+        self.type = type(original_exp).__name__
+
+
 def apply_metric(obj, metric):
     """apply a metric to an object.
     returns the object's id with the labeled computed metric"""
-    id = obj['_id']
-    return id, {metric.__name__: metric(obj)}
+    try:
+        id = obj['_id']
+        return id, {metric.__name__: metric(obj)}
+
+    # re-raise as something to catch
+    except Exception as e:
+        raise MetricException(e, metric.__name__, obj)
 
 
 def merge_dicts(d1, d2):
