@@ -17,6 +17,7 @@
       - uwsgi
       - uwsgi-plugin-python3
       - supervisor
+      - unzip
 
 - name: clone git repository
   git: repo={{ git_repo }} dest={{ app_path }} force=yes accept_hostkey=yes version=deployment
@@ -33,8 +34,14 @@
 - name: install scipy dependencies
   command: sudo apt-get -y build-dep python3-scipy
 
-- name: Create virtualenv and install dependencies (app)
+- name: create virtualenv and install dependencies (app)
   pip: requirements={{ app_path }}/requirements.txt virtualenv={{ venv_path }} virtualenv_command=virtualenv virtualenv_site_packages=no virtualenv_python=python3.4
+
+- name: create the nltk data directory
+  file: path=/usr/local/share/nltk_data/tokenizers state=directory mode=0755
+
+- name: extract nltk data
+  unarchive: copy=no mode=0755 src=http://www.nltk.org/nltk_data/packages/tokenizers/punkt.zip dest=/usr/local/share/nltk_data/tokenizers creates=/usr/local/share/nltk_data/tokenizers/punkt
 
 - name: add user to webserver group
   user: name={{ remote_user }} append=yes groups={{ web_group }}

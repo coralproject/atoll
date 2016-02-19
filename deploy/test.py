@@ -11,7 +11,7 @@ data = [{
     'comments': [{
         '_id': 0,
         'user_id': 0,
-        'content': 'foo',
+        'body': 'foo',
         'actions': [
             {'type': 'likes', 'value': 10},
             {'type': 'starred', 'value': False}
@@ -26,7 +26,7 @@ data = [{
     'comments': [{
         '_id': 1,
         'user_id': 1,
-        'content': 'bar',
+        'body': 'bar',
         'actions': [
             {'type': 'likes', 'value': 20},
             {'type': 'starred', 'value': True}
@@ -39,7 +39,39 @@ data = [{
 }]
 
 # if using a self-signed cert, set verify=False. otherwise, it should be verify=True
-resp = requests.post('https://{}/pipelines/users/score'.format(host), json={'data':data}, verify=False)
+resp = requests.post('https://{}/pipelines/users/score'.format(host), json={'data':data})
+
+assert resp.status_code == 200
+print(json.dumps(resp.json(), sort_keys=True, indent=2))
+
+
+data = [{
+    '_id': 0,
+    'user_id': 0,
+    'body': 'foo',
+    'actions': [
+        {'type': 'likes', 'value': 10},
+        {'type': 'starred', 'value': False}
+    ],
+    'status': 3,
+    'children': [],
+    'date_created': datetime.today().isoformat(),
+    'parent_id': None
+}, {
+    '_id': 1,
+    'user_id': 1,
+    'body': 'bar',
+    'actions': [
+        {'type': 'likes', 'value': 20},
+        {'type': 'starred', 'value': True}
+    ],
+    'status': 2,
+    'children': [],
+    'date_created': datetime.today().isoformat(),
+    'parent_id': None
+}]
+
+resp = requests.post('https://{}/pipelines/comments/score'.format(host), json={'data':data})
 
 assert resp.status_code == 200
 print(json.dumps(resp.json(), sort_keys=True, indent=2))
