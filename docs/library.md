@@ -23,8 +23,14 @@ For the basic scoring endpoints, e.g. `/<entity>/score`, the response has JSON d
 ```
 {
     'results': {
-        'collection': [{...}], # computed metrics for each entity
-        'aggregates': {...}    # aggregate statistics for each metric across the entire collection (e.g. mean, max, min, std, etc)
+        'collection': [{...}],  # computed metrics for each entity
+        'aggregates': {         # aggregate statistics for each metric across the entire collection
+            'mean': float,
+            'min': float,
+            'max': float,
+            'std': float,
+            'count': int
+        }
     }
 }
 ```
@@ -41,31 +47,34 @@ __Technical description__: All of these metrics are computed with simple Bayesia
 
 __Input__:
 ```
-[{
-    'id': int,
+{'data': [{
+    '_id': str,
     'comments': [{
-        'id': int,
-        'user_id': int,
-        'parent_id': int,
+        '_id': str,
+        'user_id': str,
+        'parent_id': str,
         'children': [ ...comments... ],
-        'likes': int,
+        'actions': [{'type': str, 'val': int}, ...],
         'starred': bool,
         'status': int,
-        'content': str,
+        'body': str,
         'date_created': isoformat datetime
     }, ...]
-}, ...]
+}, ...]}
 ```
 
 __Output__:
 ```
-[{
-    'id': int,
-    'discussion_score': float,
-    'like_score': float,
-    'starred_score': float,
-    'moderated_prob': float
-}, ...]
+{'results':
+    'collection': [{
+        'id': str,
+        'discussion_score': float,
+        'like_score': float,
+        'starred_score': float,
+        'moderated_prob': float
+    }, ...],
+    'aggregates': {...}
+}
 ```
 
 ### Metrics
@@ -115,25 +124,29 @@ __Technical description__: All of these metrics are computed with simple Bayesia
 
 __Input__:
 ```
-[{
-    'id': int,
-    'user_id': int,
-    'parent_id': int,
+{'data': [{
+    '_id': str,
+    'user_id': str,
+    'parent_id': str,
     'children': [ ...comments... ],
-    'likes': int,
+    'actions': [{'type': str, 'val': int}, ...],
     'starred': bool,
-    'moderated': bool,
-    'content': str,
+    'status': int,
+    'body': str,
     'date_created': isoformat datetime
-}, ...]
+}, ...]}
 ```
 
 __Output__:
 ```
-[{
-    'id': int,
-    'diversity_score': float
-}, ...]
+{'results':
+    'collection': [{
+        'id': str,
+        'diversity_score': float,
+        'readability_scores': { ... }
+    }, ...],
+    'aggregates': {...}
+}
 ```
 
 ### Metrics
@@ -259,27 +272,30 @@ __Technical description__: All of these metrics are computed with simple Bayesia
 __Input__:
 Either:
 ```
-[{
-    'id': int,
+{'data': [{
+    '_id': str,
     'threads': [ thread-structured comments ],
-}, ...]
+}, ...]}
 ```
 
 Or:
 ```
-[{
-    'id': int,
+{'data': [{
+    '_id': str,
     'comments': [ flat list of comments ],
-}, ...]
+}, ...]}
 ```
 
 __Output__:
 ```
-[{
-    'id': int,
-    'discussion_score': float,
-    'diversity_score': float
-}, ...]
+{'results':
+    'collection': [{
+        'id': str,
+        'discussion_score': float,
+        'diversity_score': float
+    }, ...],
+    'aggregates': {...}
+}
 ```
 
 ### Metrics
@@ -322,7 +338,7 @@ Two endpoints are exposed for this:
 - `/comments/model/moderation/run` POST a collection of comments and a model name, e.g. `{'data': [ ...comments...], 'name': 'my_comments_model'}` to run the model. A response consisting of the following is returned:
 
     {'results': [{
-        'id': int,      # id of the comment
+        'id': str,      # id of the comment
         'prob': float   # probability that the comment would be moderated
     }, ...]}
 
