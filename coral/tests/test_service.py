@@ -137,8 +137,8 @@ class ServiceTest(unittest.TestCase):
 
     def test_comments_score(self):
         data = [
-            self._make_comment(),
-            self._make_comment()
+            self._make_comment(n_replies=2, depth=1),
+            self._make_comment(n_replies=2, depth=1),
         ]
 
         resp = self._call_pipeline('comments/score', data)
@@ -150,6 +150,7 @@ class ServiceTest(unittest.TestCase):
             'readability_scores': dict
         }
         resp_json = json.loads(resp.data.decode('utf-8'))
+        print(resp_json)
         for result in resp_json['results']['collection']:
             for k, t in expected.items():
                 self.assertTrue(isinstance(result[k], t))
