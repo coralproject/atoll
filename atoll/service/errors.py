@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, jsonify
 
 bp = Blueprint('errors', __name__)
 
@@ -10,7 +10,15 @@ def not_found(error):
 
 @bp.app_errorhandler(500)
 def internal_error(error):
-    return 'Internal error', 500
+    """return more helpful info on 500"""
+    data = {
+        'type': type(error).__name__,
+        'message': str(error)
+    }
+    if hasattr(error, 'data'):
+        data['data'] = error.data
+
+    return jsonify(data), 500
 
 
 @bp.app_errorhandler(400)
