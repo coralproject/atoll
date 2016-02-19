@@ -54,8 +54,7 @@ __Input__:
         'user_id': str,
         'parent_id': str,
         'children': [ ...comments... ],
-        'actions': [{'type': str, 'val': int}, ...],
-        'starred': bool,
+        'actions': [{'type': str, 'val': int}, ...], # e.g. {'type': 'likes', 'val': 10}, {'type': 'starred', 'val': bool}
         'status': int,
         'body': str,
         'date_created': isoformat datetime
@@ -70,7 +69,7 @@ __Output__:
         'id': str,
         'discussion_score': float,
         'like_score': float,
-        'starred_score': float,
+        'organization_score': float,
         'moderated_prob': float
     }, ...],
     'aggregates': {...}
@@ -130,7 +129,6 @@ __Input__:
     'parent_id': str,
     'children': [ ...comments... ],
     'actions': [{'type': str, 'val': int}, ...],
-    'starred': bool,
     'status': int,
     'body': str,
     'date_created': isoformat datetime
