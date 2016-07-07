@@ -33,7 +33,7 @@ try:
     #mongo_host = os.environ['MONGODB_HOST']
 except Exception as err:
     print("ERROR: Environment variable not found. " + err, file=sys.stderr)
-    exit()
+    exit(1)
 
 # Connect to Statsd
 try:
@@ -48,7 +48,7 @@ try:
         rmq_host, rmq_port, '/', credentials))
 except Exception as err:
     print("ERROR: Could not connect to RabbitMQ. " + str(err), file=sys.stderr)
-    exit()
+    exit(1)
 
 # Connect to Pillar exchange
 try:
@@ -62,7 +62,7 @@ try:
 except Exception as err:
     print("ERROR: Could not connect to Pillar RabbitMQ exchange. " + str(err),
           file=sys.stderr)
-    exit()
+    exit(1)
 
 # Declare callback for each message
 def callback(channel, method, properties, body):
