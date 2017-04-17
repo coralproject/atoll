@@ -23,3 +23,6 @@ git+https://github.com/dask/distributed
 
 # for coral-atoll
 scikit-learn==0.17
+
+pika==0.10.0
+statsd==3.2.1
